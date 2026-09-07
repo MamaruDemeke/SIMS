@@ -62,7 +62,7 @@ class LoginController extends Controller
         if (!str_ends_with($credentials['email'], '@' . $emailDomain)) {
             // withErrors() stores an error; back() sends the user back to the form.
             return back()->withErrors([
-                'email' => 'Only @' . $emailDomain . ' email addresses are allowed.',
+                'email' =>'Please enter a valid email address.',
             ])->onlyInput('email'); // onlyInput() keeps the typed email so they don't retype it
         }
 
@@ -120,7 +120,7 @@ class LoginController extends Controller
             return back()
                 ->withErrors(['password' => 'The password does not match our records.'])
                 ->with('retry_after', 30)  // tell the login view to show a 30s countdown
-                ->onlyInput('email');
+                ->onlyInput('password');
         }
 
         // After the 4th failure (tried once more after the countdown) → deactivate.

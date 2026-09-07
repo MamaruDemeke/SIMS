@@ -92,8 +92,12 @@
         $receivedPurchases = App\Models\Purchase::where('status', 'received')->count(); // done (stock updated)
 
         // The 5 most recently approved purchases, newest first (by approval time).
+        // We use whereNotNull('approved_at') instead of status = 'approved' because
+        // an approved purchase is later moved to 'received' (stock updated), so a
+        // status filter would make this list empty. Using approved_at includes both
+        // still-approved AND already-received purchases that were approved.
         $recentApprovedPurchases = App\Models\Purchase::with('supplier')
-            ->where('status', 'approved')
+            ->whereNotNull('approved_at')
             ->latest('approved_at')
             ->take(5)
             ->get();
@@ -266,7 +270,7 @@
             <h3 class="text-sm font-semibold text-gray-800">Recent Approved Purchases</h3>
             <p class="text-xs text-gray-500">The 5 most recently approved purchases (newest first)</p>
         </div>
-        <a href="{{ route('purchases.index', ['status' => 'approved']) }}" class="text-xs font-medium text-blue-600 hover:text-blue-700">View all</a>
+        <a href="{{ route('purchases.index') }}" class="text-xs font-medium text-blue-600 hover:text-blue-700">View all</a>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">

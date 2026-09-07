@@ -42,7 +42,11 @@
             } elseif ($notification->sale_id) {
                 $target = route('sales.show', $notification->sale_id);
             } elseif ($notification->product_id) {
-                $target = route('stock-notifications.index');
+                // A stock/purchase-request alert. Purchase Officers go to their
+                // "Purchase Requests" form; everyone else goes to the stock-alerts page.
+                $target = in_array(Auth::user()->role?->slug, ['purchase-officer', 'admin'])
+                    ? route('stock-notifications.pending')
+                    : route('stock-notifications.index');
             }
         @endphp
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 {{ $notification->is_read ? 'opacity-60' : '' }} {{ $target ? 'transition-colors hover:bg-blue-50/40' : '' }}">

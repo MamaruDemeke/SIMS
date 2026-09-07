@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\Product;
 use App\Models\StockNotification;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -95,6 +97,16 @@ class StockNotificationController extends Controller
             'notified_by' => Auth::id(),
         ]);
 
+        // Deliver an in-app notification to every Purchase Officer, so it shows
+        // up as unread on their bell icon.
+        NotificationService::notifyRole(
+            'purchase-officer',
+            $type,
+            'Purchase request: ' . $product->name,
+            $message,
+            $product->id
+        );
+
         return back()->with('success', "Stock notification sent for {$product->name}.");
     }
 
@@ -109,6 +121,13 @@ class StockNotificationController extends Controller
             ->pending()
             ->latest()
             ->paginate(20);
+
+        // The Purchase Officer has now seen the pending requests (the "form").
+        // Clear their unread in-app stock notifications so the bell badge resets.
+        Notification::where('user_id', Auth::id())
+            ->where('is_read', false)
+            ->whereNotNull('product_id')
+            ->update(['is_read' => true]);
 
         return view('stock-notifications.pending', compact('notifications'));
     }
@@ -147,6 +166,16 @@ class StockNotificationController extends Controller
             'message' => $message,
             'notified_by' => Auth::id(),
         ]);
+
+        // Deliver an in-app notification to every Purchase Officer so it shows
+        // up as unread on their bell icon.
+        NotificationService::notifyRole(
+            'purchase-officer',
+            $type,
+            'Purchase request: ' . $product->name,
+            $message,
+            $product->id
+        );
 
         return back()->with('success', "Purchase Officer notified to buy {$product->name}.");
     }

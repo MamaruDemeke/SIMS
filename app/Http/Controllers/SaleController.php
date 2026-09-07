@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Notification;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -259,6 +260,13 @@ class SaleController extends Controller
     public function show(Sale $sale)
     {
         $sale->load(['customer', 'items.product', 'creator', 'approver']);
+
+        // If the user arrived via a notification, the sale "form" (Approve /
+        // Reject buttons) is on screen — clear this user's unread alerts for it.
+        Notification::where('user_id', Auth::id())
+            ->where('is_read', false)
+            ->where('sale_id', $sale->id)
+            ->update(['is_read' => true]);
 
         return view('sales.show', compact('sale'));
     }

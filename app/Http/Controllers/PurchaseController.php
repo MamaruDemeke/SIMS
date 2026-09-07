@@ -277,6 +277,14 @@ class PurchaseController extends Controller
         // Load all related data needed by the view.
         $purchase->load(['supplier', 'items.product', 'creator', 'approver', 'receiver']);
 
+        // If this user arrived here by clicking a notification, the purchase
+        // "form" (Approve / Receive / Edit buttons) is now on screen — so mark
+        // their unread alerts linked to this purchase as read.
+        Notification::where('user_id', Auth::id())
+            ->where('is_read', false)
+            ->where('purchase_id', $purchase->id)
+            ->update(['is_read' => true]);
+
         return view('purchases.show', compact('purchase'));
     }
 

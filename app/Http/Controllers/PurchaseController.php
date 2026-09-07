@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 // Imports: all models and helpers used in this controller.
+use App\Models\Category;
 use App\Models\Inventory;
 use App\Models\InventoryMovement;
+use App\Models\Notification;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\StockNotification;
 use App\Models\Supplier;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -61,12 +64,12 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Inventory Manager: list purchases that are "pending" (awaiting physical receipt).
+     * Inventory Manager: list purchases that are "approved" (awaiting physical receipt).
      */
     public function pendingList(Request $request)
     {
-        // Only status = pending.
-        $query = Purchase::with('supplier', 'creator')->where('status', 'pending')->latest();
+        // Only status = approved (Finance has approved, inventory will receive now).
+        $query = Purchase::with('supplier', 'creator')->where('status', 'approved')->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -82,12 +85,11 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Finance: list purchases that are "received" (awaiting financial approval).
-     * Also eager-loads the receiver so Finance can see who received the goods.
+     * Finance: list purchases that are "pending" (awaiting financial approval).
      */
     public function receiptList(Request $request)
     {
-        $query = Purchase::with('supplier', 'creator', 'receiver')->where('status', 'received')->latest();
+        $query = Purchase::with('supplier', 'creator', 'items.product')->where('status', 'pending')->latest();
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -105,11 +107,14 @@ class PurchaseController extends Controller
 
     /**
      * Purchase Officer: show the "Create Purchase" form.
-     * It pre-fills the form with pending stock notifications (which products need buying).
+     * Select supplier → category → product → fill quantity.
+     *
+     * If the form was reached from a pending stock notification
+     * (?notification=ID), the notified product (and its supplier) is
+     * pre-selected and its attributes auto-filled into the first item row.
      */
     public function create()
     {
-        // Only Purchase Officers may create purchases.
         if (Auth::user()->role?->slug !== 'purchase-officer') {
             abort(403, 'Only Purchase Officer can create purchases.');
         }
@@ -117,18 +122,70 @@ class PurchaseController extends Controller
         // Active suppliers to choose from.
         $suppliers = Supplier::where('status', true)->orderBy('name')->get();
 
-        // Pending (not yet fulfilled) stock notifications — the "shopping list".
+        // Active categories for the category filter.
+        $categories = Category::where('status', true)->orderBy('name')->get();
+
+        // All active products (with their categories). The purchase form filters
+        // these by the selected supplier using the supplier_product relationship.
+        $products = Product::where('status', true)->with(['category', 'suppliers'])->orderBy('name')->get();
+
+        // Convert to JSON for JavaScript. Include supplier_ids so the form
+        // only shows products that the selected supplier actually sells.
+        $productsJson = $products->map(fn($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'code' => $p->product_code,
+            'price' => $p->purchase_price,
+            'category_id' => $p->category_id,
+            'unit' => $p->unit,
+            'type' => $p->grade,
+            'diameter' => $p->diameter,
+            'size' => $p->length,
+            'supplier_ids' => $p->suppliers->pluck('id')->map(fn($id) => (string) $id)->toArray(),
+        ])->values();
+
+        // Pending stock notifications (optional — can still use them).
         $notifications = StockNotification::with('product')->pending()->latest()->get();
+        $notificationsJson = $notifications->map(fn($n) => [
+            'id' => $n->id,
+            'product_id' => $n->product_id,
+            'type' => $n->type,
+            'message' => $n->message,
+            'current_quantity' => $n->current_quantity,
+        ])->values();
 
-        // Unique product ids from those notifications → the products selectable.
-        $productIds = $notifications->pluck('product_id')->unique();
-        $products = Product::whereIn('id', $productIds)->orderBy('name')->get();
+        // ---- Preselect from a stock notification (if the officer came from
+        //      the pending "Create Purchase" button). ----
+        $preselected = null;
+        if ($notificationId = request()->query('notification')) {
+            $notification = StockNotification::with('product')->pending()->find($notificationId);
+            if ($notification && $notification->product) {
+                $product = $notification->product;
+                $preselected = [
+                    'notification_id' => $notification->id,
+                    'product' => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'code' => $product->product_code,
+                        'price' => $product->purchase_price,
+                        'category_id' => $product->category_id,
+                        'unit' => $product->unit,
+                        'type' => $product->grade,
+                        'diameter' => $product->diameter,
+                        'size' => $product->length,
+                    ],
+                ];
+            }
+        }
 
-        // Convert collections to JSON so JavaScript (in the form) can use them dynamically.
-        $productsJson = $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->product_code, 'price' => $p->purchase_price])->values();
-        $notificationsJson = $notifications->map(fn($n) => ['id' => $n->id, 'product_id' => $n->product_id, 'type' => $n->type, 'message' => $n->message, 'current_quantity' => $n->current_quantity])->values();
+        if ($preselected) {
+            // Opened from a notification → show a single compact form:
+            // just pick a supplier and set the quantity + price for the one
+            // pre-selected product.
+            return view('purchases.create-compact', compact('suppliers', 'preselected', 'product'));
+        }
 
-        return view('purchases.create', compact('suppliers', 'products', 'productsJson', 'notifications', 'notificationsJson'));
+        return view('purchases.create', compact('suppliers', 'categories', 'products', 'productsJson', 'notifications', 'notificationsJson', 'preselected'));
     }
 
     /**
@@ -142,7 +199,7 @@ class PurchaseController extends Controller
 
         // Validate the submitted data.
         $request->validate([
-            'stock_notification_id' => 'required|exists:stock_notifications,id', // which alert we're resolving
+            'stock_notification_id' => 'nullable|exists:stock_notifications,id', // optional
             'supplier_id' => 'required|exists:suppliers,id',
             'items' => 'required|array|min:1', // at least one line
             'items.*.product_id' => 'required|exists:products,id',
@@ -151,10 +208,13 @@ class PurchaseController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Fetch the notification; make sure it isn't already fulfilled.
-        $notification = StockNotification::findOrFail($request->stock_notification_id);
-        if ($notification->fulfilled) {
-            return back()->withInput()->with('error', 'This notification has already been fulfilled.');
+        // If a notification was provided, make sure it isn't already fulfilled.
+        $notification = null;
+        if ($request->stock_notification_id) {
+            $notification = StockNotification::findOrFail($request->stock_notification_id);
+            if ($notification->fulfilled) {
+                return back()->withInput()->with('error', 'This notification has already been fulfilled.');
+            }
         }
 
         // --- Transaction: all DB writes succeed together, or none do. ---
@@ -173,7 +233,7 @@ class PurchaseController extends Controller
             // Create the purchase header row.
             $purchase = Purchase::create([
                 'supplier_id' => $request->supplier_id,
-                'stock_notification_id' => $notification->id,
+                'stock_notification_id' => $notification?->id,
                 'reference_number' => Purchase::generateReferenceNumber(), // e.g. PUR-00005
                 'status' => 'draft',
                 'total_amount' => $total,
@@ -182,8 +242,10 @@ class PurchaseController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            // Remember which notification this purchase resolves.
-            $notification->update(['purchase_id' => $purchase->id]);
+            // Remember which notification this purchase resolves (if any).
+            if ($notification) {
+                $notification->update(['purchase_id' => $purchase->id]);
+            }
 
             // Create one PurchaseItem row per line item.
             foreach ($request->items as $item) {
@@ -344,49 +406,39 @@ class PurchaseController extends Controller
         // Change draft → pending.
         $purchase->update(['status' => 'pending']);
 
-        return back()->with('success', "Purchase {$purchase->reference_number} submitted. Waiting for Inventory Manager to receive.");
+        // Notify all Finance users that a purchase is awaiting financial approval.
+        NotificationService::notifyRole(
+            'finance',
+            'purchase',
+            'New Purchase Submitted',
+            "Purchase {$purchase->reference_number} (Supplier: {$purchase->supplier?->name}) was submitted and is awaiting your approval.",
+            null,
+            $purchase->id
+        );
+
+        return back()->with('success', "Purchase {$purchase->reference_number} submitted. Waiting for Finance to approve.");
     }
 
     /**
-     * Inventory Manager: receive the physical stock.
-     * Marks the purchase as "received" and generates a RECEIPT number for Finance.
-     * NOTE: Stock quantity is NOT changed here — that happens on approve().
+     * Inventory Manager: receive the physical stock after Finance has approved.
+     * Marks the purchase as "received", generates a RECEIPT number, and THIS is
+     * where the actual stock numbers are increased (since the goods have
+     * physically arrived); a stock movement (ledger) record is created per item.
      */
     public function receive(Request $request, Purchase $purchase)
     {
-        if ($purchase->status !== 'pending') {
-            return back()->with('error', 'Only pending purchases can be received.');
-        }
-
-        $purchase->update([
-            'status' => 'received',
-            'received_by' => Auth::id(),          // who received it
-            'received_at' => now(),               // when
-            'receipt_number' => Purchase::generateReceiptNumber(), // e.g. REC-00001
-        ]);
-
-        return back()->with('success', "Purchase {$purchase->reference_number} received. Receipt {$purchase->receipt_number} sent to Finance.");
-    }
-
-    /**
-     * Finance: approve a received purchase.
-     * THIS is where the actual stock numbers are increased,
-     * and a stock movement (ledger) record is created for each item.
-     */
-    public function approve(Purchase $purchase)
-    {
-        if ($purchase->status !== 'received') {
-            return back()->with('error', 'Only received purchases can be approved.');
+        if ($purchase->status !== 'approved') {
+            return back()->with('error', 'Only approved purchases can be received.');
         }
 
         DB::beginTransaction();
 
         try {
-            // Mark as approved + who/when.
             $purchase->update([
-                'status' => 'approved',
-                'approved_by' => Auth::id(),
-                'approved_at' => now(),
+                'status' => 'received',
+                'received_by' => Auth::id(),          // who received it
+                'received_at' => now(),               // when
+                'receipt_number' => Purchase::generateReceiptNumber(), // e.g. REC-00001
             ]);
 
             // For every item in this purchase, add its quantity to stock.
@@ -410,7 +462,7 @@ class PurchaseController extends Controller
                     'product_id' => $item->product_id,
                     'type' => 'purchase',
                     'quantity' => $item->quantity,
-                    'note' => "Purchase {$purchase->reference_number} (Receipt: {$purchase->receipt_number}) approved. Stock updated.",
+                    'note' => "Purchase {$purchase->reference_number} (Receipt: {$purchase->receipt_number}) received. Stock updated.",
                     'created_by' => Auth::id(),
                 ]);
             }
@@ -421,26 +473,115 @@ class PurchaseController extends Controller
             }
 
             DB::commit();
-
-            return back()->with('success', "Purchase {$purchase->reference_number} approved. Stock updated.");
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to approve: ' . $e->getMessage());
+            return back()->with('error', 'Failed to receive: ' . $e->getMessage());
         }
+
+        // Clean up any earlier "workflow alert" notifications linked to this
+        // purchase (e.g. the original "awaiting approval" alert) so they don't
+        // linger as stale action items. The receive confirmations below are
+        // created fresh after this cleanup and are kept.
+        Notification::where('purchase_id', $purchase->id)
+            ->where('type', 'purchase')
+            ->delete();
+
+        // Notify all Finance users that the stock has been received.
+        NotificationService::notifyRole(
+            'finance',
+            'purchase',
+            'Purchase Received',
+            "Purchase {$purchase->reference_number} was received (Receipt: {$purchase->receipt_number}) and stock has been updated."
+        );
+
+        // Also let the purchase officer who created it know it was received.
+        NotificationService::notifyUser(
+            $purchase->created_by,
+            'purchase',
+            'Purchase Received',
+            "Your purchase {$purchase->reference_number} has been received and stock updated.",
+            null,
+            $purchase->id
+        );
+
+        return back()->with('success', "Purchase {$purchase->reference_number} received. Receipt {$purchase->receipt_number} generated and stock updated.");
     }
 
     /**
-     * Reject a purchase (used by Inventory Manager on pending, or Finance on received).
+     * Finance: approve a pending purchase.
+     * This is a financial approval ONLY — no stock changes here. Once Finance
+     * approves, the purchase moves to "approved" and the Inventory Manager
+     * physically receives the goods (stock is updated at that point).
+     */
+    public function approve(Purchase $purchase)
+    {
+        if ($purchase->status !== 'pending') {
+            return back()->with('error', 'Only pending purchases can be approved.');
+        }
+
+        // Mark as finance-approved + who/when.
+        $purchase->update([
+            'status' => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        // Clear the original "awaiting approval" workflow alert now that Finance
+        // has acted; the "approved" confirmations created below are kept.
+        Notification::where('purchase_id', $purchase->id)
+            ->where('type', 'purchase')
+            ->delete();
+
+        // Notify all Inventory Managers that the purchase is approved and
+        // physically ready to be received into stock.
+        NotificationService::notifyRole(
+            'inventory-manager',
+            'approval',
+            'Purchase Approved — Awaiting Receipt',
+            "Purchase {$purchase->reference_number} was approved by Finance and is now ready for you to receive into stock.",
+            null,
+            $purchase->id
+        );
+
+        // Also let the purchase officer know finance approved it.
+        NotificationService::notifyUser(
+            $purchase->created_by,
+            'approval',
+            'Purchase Approved',
+            "Purchase {$purchase->reference_number} was approved by Finance. Waiting for Inventory to receive the goods.",
+            null,
+            $purchase->id
+        );
+
+        return back()->with('success', "Purchase {$purchase->reference_number} approved. Awaiting Inventory Manager to receive the stock.");
+    }
+
+    /**
+     * Reject a purchase (used by Finance on pending, or Inventory Manager on approved).
      * Simply moves the status to "rejected".
      */
     public function reject(Purchase $purchase)
     {
-        // Only pending or received purchases can be rejected.
-        if (!in_array($purchase->status, ['pending', 'received'])) {
-            return back()->with('error', 'Only pending or received purchases can be rejected.');
+        // Only pending or approved purchases can be rejected.
+        if (!in_array($purchase->status, ['pending', 'approved'])) {
+            return back()->with('error', 'Only pending or approved purchases can be rejected.');
         }
 
+        $previousStatus = $purchase->status;
+
         $purchase->update(['status' => 'rejected']);
+
+        // Notify the purchase officer who created it about the rejection,
+        // describing who rejected it (Finance vs Inventory).
+        $stage = $previousStatus === 'pending' ? 'Finance' : 'Inventory Manager';
+        NotificationService::notifyUser(
+            $purchase->created_by,
+            'rejection',
+            'Purchase Rejected',
+            "Purchase {$purchase->reference_number} was rejected by the {$stage}.",
+            null,
+            $purchase->id
+        );
 
         return back()->with('success', "Purchase {$purchase->reference_number} rejected.");
     }

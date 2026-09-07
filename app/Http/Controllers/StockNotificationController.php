@@ -112,4 +112,42 @@ class StockNotificationController extends Controller
 
         return view('stock-notifications.pending', compact('notifications'));
     }
+
+    /**
+     * Inventory Manager: notify the Purchase Officer to buy a (possibly new) product.
+     * Unlike notify(), this works even when the product has no inventory record yet,
+     * so a brand-new product can be flagged for purchase immediately.
+     */
+    public function notifyPurchase(Product $product)
+    {
+        // Prevent duplicates: refuse if this product already has an open alert.
+        $existingPending = StockNotification::where('product_id', $product->id)
+            ->where('fulfilled', false)
+            ->first();
+
+        if ($existingPending) {
+            return back()->with('error', 'A pending notification already exists for this product.');
+        }
+
+        $inventory = $product->inventory;
+        $quantity = $inventory->quantity ?? 0;
+        $minimum = $inventory->minimum_stock ?? 0;
+
+        $needsPurchase = $quantity <= 0;
+        $type = $needsPurchase ? 'out_of_stock' : 'low_stock';
+        $message = $needsPurchase
+            ? "{$product->name} needs to be purchased (currently no stock). New product."
+            : "{$product->name} is low on stock ({$quantity} {$product->unit}, minimum: {$minimum}). Purchase needed.";
+
+        StockNotification::create([
+            'product_id' => $product->id,
+            'current_quantity' => $quantity,
+            'minimum_stock' => $minimum,
+            'type' => $type,
+            'message' => $message,
+            'notified_by' => Auth::id(),
+        ]);
+
+        return back()->with('success', "Purchase Officer notified to buy {$product->name}.");
+    }
 }

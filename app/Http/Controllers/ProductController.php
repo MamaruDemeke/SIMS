@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * Handles the Product management pages (create, list, edit, delete).
@@ -37,7 +38,7 @@ class ProductController extends Controller
         }
 
         // Paginate results (15 per page), keeping filters on page changes.
-        $products = $query->orderBy('name')->paginate(15)->withQueryString();
+        $products = $query->orderBy('name')->paginate(5)->withQueryString();
 
         // Active categories only, used for the filter dropdown.
         $categories = Category::where('status', true)->orderBy('name')->get();
@@ -62,17 +63,18 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         // Validate every field. On failure, Laravel redirects back with errors.
+        // The same product code is allowed across different grades, so the
+        // uniqueness check is scoped to the product_code + grade combination.
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
-            'product_code' => 'required|string|max:50|unique:products,product_code',
+            'product_code' => ['required', 'string', 'max:50', Rule::unique('products', 'product_code')->where('grade', $request->grade)],
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:20',
             'diameter' => 'nullable|string|max:50',   // optional
             'length' => 'nullable|string|max:50',     // optional
-            'grade' => 'nullable|string|max:50',      // optional
+            'grade' => 'required|string|max:50',      // required — stock is classified by grade
             'purchase_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
-            'minimum_stock' => 'required|integer|min:0',
+            'selling_price' => 'nullable|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'status' => 'boolean',
         ]);
@@ -81,7 +83,7 @@ class ProductController extends Controller
         $validated['status'] = $request->boolean('status');
 
         // Insert the new product.
-        Product::create($validated);
+        $product = Product::create($validated);
 
         return redirect()->route('products.index')
             ->with('success', 'Product created successfully.');
@@ -105,16 +107,16 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
-            // unique check ignores this product's own code when checking for duplicates.
-            'product_code' => 'required|string|max:50|unique:products,product_code,' . $product->id,
+            // unique check ignores this product's own id, and is scoped to the
+            // product_code + grade combination (same code allowed in other grades).
+            'product_code' => ['required', 'string', 'max:50', Rule::unique('products', 'product_code')->where('grade', $request->grade)->ignore($product->id)],
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:20',
             'diameter' => 'nullable|string|max:50',
             'length' => 'nullable|string|max:50',
-            'grade' => 'nullable|string|max:50',
+            'grade' => 'required|string|max:50',
             'purchase_price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
-            'minimum_stock' => 'required|integer|min:0',
+            'selling_price' => 'nullable|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'status' => 'boolean',
         ]);

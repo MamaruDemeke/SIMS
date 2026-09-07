@@ -37,7 +37,7 @@
                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {{ !request('type') ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
                         All Types
                     </a>
-                    @foreach(['purchase', 'sale', 'customer_return', 'supplier_return', 'adjustment'] as $type)
+                    @foreach(['purchase', 'sale'] as $type)
                         <a href="{{ request()->fullUrlWithQuery(['type' => $type]) }}"
                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 {{ request('type') === $type ? 'bg-blue-50 text-blue-700 font-medium' : '' }}">
                             {{ str_replace('_', ' ', ucfirst($type)) }}
@@ -84,7 +84,7 @@
                     <th scope="col" class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
                     <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Quantity</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Note</th>
-                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">By</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Aproved By</th>
                 </tr>
             </thead>
             <tbody>

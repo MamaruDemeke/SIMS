@@ -38,4 +38,14 @@ class Supplier extends Model
     {
         return $this->hasMany(Purchase::class);
     }
+
+    /**
+     * Relationship: many-to-many — a supplier sells many products, a product
+     * can be sold by many suppliers. Uses the supplier_product pivot table.
+     * Usage: $supplier->products -> collection of Product objects.
+     */
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'supplier_product', 'supplier_id', 'product_id');
+    }
 }

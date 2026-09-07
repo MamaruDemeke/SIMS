@@ -56,6 +56,16 @@ class Product extends Model
     }
 
     /**
+     * Relationship: many-to-many — a product can be sold by many suppliers,
+     * a supplier sells many products. Uses the supplier_product pivot table.
+     * Usage: $product->suppliers -> collection of Supplier objects.
+     */
+    public function suppliers()
+    {
+        return $this->belongsToMany(Supplier::class, 'supplier_product', 'product_id', 'supplier_id');
+    }
+
+    /**
      * Query scope: allows filtering products by a search term.
      * A "scope" is a reusable query condition. Usage: Product::search('rebar')
      * This searches name, product_code, and description for the text.

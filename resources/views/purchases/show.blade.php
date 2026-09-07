@@ -17,7 +17,7 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div class="flex items-center justify-between text-xs font-medium">
             @php
-                $steps = ['draft' => 'Draft', 'pending' => 'Submitted', 'received' => 'Received', 'approved' => 'Stock Updated'];
+                $steps = ['draft' => 'Draft', 'pending' => 'Submitted', 'approved' => 'Approved', 'received' => 'Received / Stock Updated'];
                 $currentIndex = array_search($purchase->status, array_keys($steps));
                 if ($purchase->status === 'rejected') $currentIndex = -1;
             @endphp
@@ -70,25 +70,25 @@
                 </form>
             @endif
 
-            {{-- Inventory Manager: receive pending --}}
-            @if($purchase->status === 'pending' && $user->role?->slug === 'inventory-manager')
-                <form method="POST" action="{{ route('purchases.receive', $purchase) }}" class="inline">
+            {{-- Finance: approve pending --}}
+            @if($purchase->status === 'pending' && $user->role?->slug === 'finance')
+                <form method="POST" action="{{ route('purchases.approve', $purchase) }}" class="inline">
                     @csrf
-                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">Mark as Received</button>
+                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">Approve</button>
                 </form>
-                <form method="POST" action="{{ route('purchases.reject', $purchase) }}" class="inline" onsubmit="return confirm('Reject this purchase?')">
+                <form method="POST" action="{{ route('purchases.financeReject', $purchase) }}" class="inline" onsubmit="return confirm('Reject this purchase?')">
                     @csrf
                     <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Reject</button>
                 </form>
             @endif
 
-            {{-- Finance: approve/reject received --}}
-            @if($purchase->status === 'received' && $user->role?->slug === 'finance')
-                <form method="POST" action="{{ route('purchases.approve', $purchase) }}" class="inline">
+            {{-- Inventory Manager: receive approved stock --}}
+            @if($purchase->status === 'approved' && $user->role?->slug === 'inventory-manager')
+                <form method="POST" action="{{ route('purchases.receive', $purchase) }}" class="inline">
                     @csrf
-                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">Approve & Update Stock</button>
+                    <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">Mark as Received</button>
                 </form>
-                <form method="POST" action="{{ route('purchases.financeReject', $purchase) }}" class="inline" onsubmit="return confirm('Reject this receipt?')">
+                <form method="POST" action="{{ route('purchases.reject', $purchase) }}" class="inline" onsubmit="return confirm('Reject this purchase?')">
                     @csrf
                     <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">Reject</button>
                 </form>
@@ -149,21 +149,21 @@
                     <p class="text-xs text-gray-500">{{ $purchase->created_at->format('M d, Y H:i') }}</p>
                 </div>
             </div>
-            @if($purchase->received_by)
-            <div class="flex items-start gap-3">
-                <div class="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
-                <div>
-                    <p class="text-sm text-gray-800">Received by <strong>{{ $purchase->receiver->name ?? '—' }}</strong> — Receipt: <strong>{{ $purchase->receipt_number }}</strong></p>
-                    <p class="text-xs text-gray-500">{{ $purchase->received_at->format('M d, Y H:i') }}</p>
-                </div>
-            </div>
-            @endif
             @if($purchase->approved_by)
             <div class="flex items-start gap-3">
                 <div class="w-2 h-2 rounded-full bg-green-700 mt-2 flex-shrink-0"></div>
                 <div>
-                    <p class="text-sm text-gray-800">Approved by <strong>{{ $purchase->approver->name ?? '—' }}</strong> — Stock updated</p>
+                    <p class="text-sm text-gray-800">Approved by <strong>{{ $purchase->approver->name ?? '—' }}</strong> — Finance approval</p>
                     <p class="text-xs text-gray-500">{{ $purchase->approved_at->format('M d, Y H:i') }}</p>
+                </div>
+            </div>
+            @endif
+            @if($purchase->received_by)
+            <div class="flex items-start gap-3">
+                <div class="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
+                <div>
+                    <p class="text-sm text-gray-800">Received by <strong>{{ $purchase->receiver->name ?? '—' }}</strong> — Receipt: <strong>{{ $purchase->receipt_number }}</strong> — Stock updated</p>
+                    <p class="text-xs text-gray-500">{{ $purchase->received_at->format('M d, Y H:i') }}</p>
                 </div>
             </div>
             @endif

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Represents a Purchase order (a request order to buy stock) in the purchases table.
- * A purchase goes through a workflow: draft → pending → received → approved (or rejected).
+ * A purchase goes through a workflow: draft → pending → approved → received (or rejected).
  */
 class Purchase extends Model
 {

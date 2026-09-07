@@ -9,11 +9,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Middleware are "security guards" that run BEFORE a request reaches its controller.
- *
+ * 
  * This is the custom role middleware. It is registered with the alias 'role'
  * in bootstrap/app.php. Usage: Route::middleware('role:products')->...
+ * 
  * It checks that the logged-in user's ROLE has the given MODULE permission.
- *
  * Example: 'role:purchases' → only users whose role has the 'purchases' permission
  * can access the route group.
  */

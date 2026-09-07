@@ -6,14 +6,13 @@ namespace App\Services;
 use App\Models\Inventory;
 use App\Models\InventoryMovement;
 use App\Models\Product;
-use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 
 /**
  * A "Service" is a helper class that groups related business logic so controllers
  * stay thin and reusable. This one handles stock-related tasks:
  *   1. recording a stock movement and updating the current quantity
- *   2. checking whether a product is low/out of stock and creating alerts
+ *   2. checking whether a product is low/out of stock
  *
  * It's used by the InventoryController (and would be used by future sales code).
  */
@@ -69,8 +68,12 @@ class StockService
     }
 
     /**
-     * Checks a product's stock level and creates a notification if it is
-     * out of stock or running low. Called after any stock change.
+     * Checks a product's stock level. Called after any stock change.
+     *
+     * NOTE: This no longer auto-creates a bell "Low Stock Alert" notification.
+     * Purchase requests are only created deliberately by the Inventory Manager
+     * via the stock-alerts "notify" button, so the purchase officer sees exactly
+     * one (non-duplicate) purchase request rather than a redundant bell alert.
      */
     public function checkLowStock(Inventory $inventory): void
     {
@@ -81,38 +84,7 @@ class StockService
             return;
         }
 
-        // Out of stock (zero or negative).
-        if ($inventory->quantity <= 0) {
-            $this->createNotification(
-                'out_of_stock',
-                'Out of Stock',
-                "{$product->name} ({$product->product_code}) is out of stock.",
-                $product->id
-            );
-        }
-        // Low stock (below minimum but still positive).
-        elseif ($inventory->quantity < $inventory->minimum_stock) {
-            $this->createNotification(
-                'low_stock',
-                'Low Stock Alert',
-                "{$product->name} ({$product->product_code}) is running low. Current: {$inventory->quantity} {$product->unit}, Minimum: {$inventory->minimum_stock} {$product->unit}.",
-                $product->id
-            );
-        }
-        // Otherwise stock is fine — no notification.
-    }
-
-    /**
-     * Private helper: actually saves a notification row to the database.
-     */
-    private function createNotification(string $type, string $title, string $message, int $productId): void
-    {
-        Notification::create([
-            'type' => $type,
-            'title' => $title,
-            'message' => $message,
-            'product_id' => $productId,
-            'is_read' => false, // starts as unread → shows the red badge
-        ]);
+        // Stock levels no longer fire a bell notification here. The Inventory
+        // Manager decides when to send a purchase request via the stock alerts page.
     }
 }

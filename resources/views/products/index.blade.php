@@ -103,6 +103,7 @@
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Code</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Grade</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Unit</th>
                     <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Purchase</th>
@@ -117,6 +118,13 @@
                         <td class="px-4 py-3.5 whitespace-nowrap">{{ $products->firstItem() + $loop->index }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap font-mono text-xs text-gray-600">{{ $product->product_code }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">{{ $product->name }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap">
+                            @if($product->grade)
+                                <x-status-badge :label="$product->grade" variant="info" />
+                            @else
+                                <span class="text-gray-400">—</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $product->category->name ?? '—' }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $product->unit }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-right text-gray-700">{{ number_format($product->purchase_price, 2) }}</td>
@@ -130,13 +138,19 @@
                         </td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-right">
                             <div class="flex items-center justify-end gap-1">
+                                <form method="POST" action="{{ route('products.notifyPurchase', $product) }}" class="inline" onsubmit="return confirm('Notify the Purchase Officer to buy {{ addslashes($product->name) }}?')">
+                                    @csrf
+                                    <button type="submit" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Notify Purchase Officer to Buy">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                                    </button>
+                                </form>
                                 <x-table-action :href="route('products.edit', $product)" icon="pencil" variant="primary" tooltip="Edit" />
                                 <x-table-action :href="route('products.destroy', $product)" icon="trash" variant="danger" method="DELETE" confirm confirm-message="Delete this product?" tooltip="Delete" />
                             </div>
                         </td>
                     </tr>
                 @empty
-                    <x-table-empty :colspan="9" message="No products found." description="Create your first product to get started." icon="search">
+                    <x-table-empty :colspan="10" message="No products found." description="Create your first product to get started." icon="search">
                         <a href="{{ route('products.create') }}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

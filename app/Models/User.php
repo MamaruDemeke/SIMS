@@ -19,7 +19,7 @@ use Illuminate\Validation\Rules\Email;
  */
 
 // #[Fillable] = which columns are allowed to be filled with data (protects against mass assignment).
-#[Fillable(['name', 'email', 'password', 'role_id', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'role_id', 'is_active', 'movements_viewed_at'])]
 // #[Hidden] = these fields are hidden whenever the user's data is converted to JSON (e.g. never send password to the browser).
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -65,6 +65,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'settings' => 'array',
             'is_active' => 'boolean', // true = active, false = deactivated
+            'movements_viewed_at' => 'datetime',
         ];
     }
 }

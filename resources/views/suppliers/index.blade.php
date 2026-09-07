@@ -38,10 +38,8 @@
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Company</th>
-                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Diameter</th>
-                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Size</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                     <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -51,11 +49,9 @@
                     <tr class="{{ $loop->index % 2 === 1 ? 'bg-gray-50/50' : 'bg-white' }} hover:bg-blue-50/30 transition-colors border-b border-gray-100 last:border-0">
                         <td class="px-4 py-3.5 whitespace-nowrap">{{ $suppliers->firstItem() + $loop->index }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">{{ $supplier->name }}</td>
-                        <td class="px-4 py-3.5 text-gray-500">{{ $supplier->company_name ?? '—' }}</td>
-                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $supplier->default_type ?? '—' }}</td>
-                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $supplier->default_diameter ?? '—' }}</td>
-                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $supplier->default_size ?? '—' }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $supplier->company_name ?? '—' }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $supplier->phone ?? '—' }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $supplier->email ?? '—' }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap">
                             @if($supplier->status)
                                 <x-status-badge label="Active" variant="success" />
@@ -71,7 +67,7 @@
                         </td>
                     </tr>
                 @empty
-                    <x-table-empty :colspan="8" message="No suppliers found." description="Create your first supplier to get started." icon="search">
+                    <x-table-empty :colspan="7" message="No suppliers found." description="Create your first supplier to get started." icon="search">
                         <a href="{{ route('suppliers.create') }}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

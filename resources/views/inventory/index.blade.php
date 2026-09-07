@@ -78,6 +78,7 @@
                 <tr>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Grade</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
                     <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Current Stock</th>
                     <th scope="col" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Minimum Stock</th>
@@ -97,6 +98,13 @@
                                 <span class="font-medium text-gray-800">{{ $item->product->name ?? '—' }}</span>
                                 <span class="ml-2 text-xs text-gray-400 font-mono">{{ $item->product->product_code ?? '' }}</span>
                             </div>
+                        </td>
+                        <td class="px-4 py-3.5 whitespace-nowrap">
+                            @if($item->product?->grade)
+                                <x-status-badge :label="'Grade ' . $item->product->grade" variant="info" />
+                            @else
+                                <span class="text-gray-400">—</span>
+                            @endif
                         </td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $item->product->category->name ?? '—' }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-right font-medium {{ $status === 'out' ? 'text-red-600' : ($status === 'low' ? 'text-yellow-600' : 'text-gray-800') }}">
@@ -121,7 +129,7 @@
                         </td>
                     </tr>
                 @empty
-                    <x-table-empty :colspan="7" message="No inventory records found." description="Products will appear here once added." icon="inbox" />
+                    <x-table-empty :colspan="8" message="No inventory records found." description="Products will appear here once added." icon="inbox" />
                 @endforelse
             </tbody>
         </table>

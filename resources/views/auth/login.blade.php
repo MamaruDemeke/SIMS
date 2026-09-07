@@ -13,10 +13,10 @@
      and inside the login card header. --}}
 @php $logo = company_logo(); @endphp
 <body class="min-h-screen flex items-center justify-center"
-      style="@if($logo) background-image:url('{{ $logo }}'); background-size:cover; background-position:center; background-repeat:no-repeat; @else background-color:#f3f4f6; @endif">
+      style="@if($logo) background-image:url('{{ $logo }}'); background-size:90% auto; background-position:90% 12%; background-repeat:no-repeat; background-attachment:fixed; @else background-color:#f3f4f6; @endif">
     {{-- Slight dark overlay so the white card stays readable over the logo. --}}
     @if($logo)
-        <div class="fixed inset-0 bg-black/40"></div>
+        <div class="fixed inset-0 bg-black/30"></div>
     @endif
     <div class="w-full max-w-md relative">
         <div class="bg-white rounded-lg shadow-2xl p-8">
@@ -32,7 +32,7 @@
             {{-- The form. method="POST" + action="{{ route('login') }}" means:
                  when submitted, it sends a POST request to the /login URL,
                  which is handled by LoginController@login (see routes/web.php). --}}
-            <form method="POST" action="{{ route('login') }}">
+            <form method="POST" action="{{ route('login') }}" id="login-form">
                 {{-- @csrf inserts a hidden CSRF token. It's REQUIRED for POST forms —
                      it stops attackers from submitting forged requests on the user's behalf. --}}
                 @csrf
@@ -93,9 +93,19 @@
                     @enderror
                 </div>
 
+                {{-- Countdown message: shown when too many failed attempts locked the form.
+                     The server flashes session('retry_after') with the seconds to wait. --}}
+                @if(session('retry_after'))
+                <div id="lock-msg" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md text-sm text-center">
+                    Too many failed attempts. Please wait
+                    <span id="lock-count" class="font-bold">{{ session('retry_after') }}</span> seconds.
+                </div>
+                @endif
+
                 {{-- Submit button --}}
                 <button
                     type="submit"
+                    id="login-btn"
                     class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out"
                 >
                     Login
@@ -116,6 +126,38 @@
             btn.querySelector('#password-eye').classList.toggle('hidden', isPassword);
             btn.querySelector('#password-eye-off').classList.toggle('hidden', !isPassword);
         }
+
+        // ==== LOCKOUT COUNTDOWN ====
+        // If the server flashed session('retry_after'), we disable the form inputs
+        // and count down from that many seconds. When it reaches 0, we re-enable.
+        @if(session('retry_after'))
+        (function countdown() {
+            let seconds = {{ session('retry_after') }};   // seconds to wait (e.g. 30)
+            const form  = document.getElementById('login-form');
+            const btn   = document.getElementById('login-btn');
+            const span  = document.getElementById('lock-count');
+
+            // Disable all inputs + the button so nothing can be submitted meanwhile.
+            form.querySelectorAll('input, button').forEach(el => el.disabled = true);
+            btn.textContent = 'Wait ' + seconds + 's';
+
+            const timer = setInterval(function () {
+                seconds--;
+                if (span) span.textContent = seconds;
+                btn.textContent = 'Wait ' + seconds + 's';
+
+                if (seconds <= 0) {
+                    clearInterval(timer);          // stop the timer
+                    btn.textContent = 'Login';     // restore button text
+                    // Re-enable all inputs + the button for retry.
+                    form.querySelectorAll('input, button').forEach(el => el.disabled = false);
+                    // Remove the lock message box.
+                    const msg = document.getElementById('lock-msg');
+                    if (msg) msg.remove();
+                }
+            }, 1000);
+        })();
+        @endif
     </script>
 </body>
 </html>

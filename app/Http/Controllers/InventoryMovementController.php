@@ -47,6 +47,11 @@ class InventoryMovementController extends Controller
         // Show newest movements first, 20 per page.
         $movements = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
+        // Record that this user just viewed the movements page, so the sidebar
+        // badge ("new movements") no longer counts them as new going forward.
+        $user = auth()->user();
+        $user->forceFill(['movements_viewed_at' => now()])->save();
+
         return view('inventory.movements', compact('movements'));
     }
 }

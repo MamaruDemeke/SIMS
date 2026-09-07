@@ -3,6 +3,46 @@
     'label' => 'records',
 ])
 
+@php
+    // Build the page-number elements manually (Laravel exposes these only in its own
+    // links() blade views, so we reconstruct them here for the custom component).
+    $current = $paginator->currentPage();
+    $last = $paginator->lastPage();
+    $elements = [];
+
+    $window = 3; // number of page links either side of the current page
+
+    if ($last <= 1) {
+        $elements = [];
+    } elseif ($last <= 7) {
+        // Few pages: show every number.
+        $elements[] = range(1, $last);
+    } else {
+        // Many pages: show current window plus first/last with "..." separators.
+        $pageRange = range(max(1, $current - $window), min($last, $current + $window));
+
+        if ($pageRange[0] > 1) {
+            $elements[] = [1 => $paginator->url(1)];
+            if ($pageRange[0] > 2) {
+                $elements[] = '...';
+            }
+        }
+
+        $links = [];
+        foreach ($pageRange as $page) {
+            $links[$page] = $paginator->url($page);
+        }
+        $elements[] = $links;
+
+        if ($pageRange[count($pageRange) - 1] < $last) {
+            if ($pageRange[count($pageRange) - 1] < $last - 1) {
+                $elements[] = '...';
+            }
+            $elements[] = [$last => $paginator->url($last)];
+        }
+    }
+@endphp
+
 @if($paginator->hasPages())
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 mt-4 overflow-hidden">
         <div class="px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-200">

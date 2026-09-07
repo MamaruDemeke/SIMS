@@ -26,8 +26,8 @@
                 ['label' => 'All', 'value' => ''],
                 ['label' => 'Draft', 'value' => 'draft'],
                 ['label' => 'Pending', 'value' => 'pending'],
-                ['label' => 'Received', 'value' => 'received'],
                 ['label' => 'Approved', 'value' => 'approved'],
+                ['label' => 'Received', 'value' => 'received'],
                 ['label' => 'Rejected', 'value' => 'rejected'],
             ],
         ],
@@ -80,8 +80,8 @@
                                     </form>
                                 @endif
 
-                                {{-- Inventory Manager: receive pending --}}
-                                @if($purchase->status === 'pending' && $role === 'inventory-manager')
+                                {{-- Inventory Manager: receive approved --}}
+                                @if($purchase->status === 'approved' && $role === 'inventory-manager')
                                     <form method="POST" action="{{ route('purchases.receive', $purchase) }}" class="inline">
                                         @csrf
                                         <button type="submit" class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Mark as Received">
@@ -96,15 +96,15 @@
                                     </form>
                                 @endif
 
-                                {{-- Finance: approve/reject received --}}
-                                @if($purchase->status === 'received' && $role === 'finance')
+                                {{-- Finance: approve/reject pending --}}
+                                @if($purchase->status === 'pending' && $role === 'finance')
                                     <form method="POST" action="{{ route('purchases.approve', $purchase) }}" class="inline">
                                         @csrf
-                                        <button type="submit" class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Approve & Update Stock">
+                                        <button type="submit" class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Approve">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                         </button>
                                     </form>
-                                    <form method="POST" action="{{ route('purchases.financeReject', $purchase) }}" class="inline" onsubmit="return confirm('Reject this receipt?')">
+                                    <form method="POST" action="{{ route('purchases.financeReject', $purchase) }}" class="inline" onsubmit="return confirm('Reject this purchase?')">
                                         @csrf
                                         <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Reject">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>

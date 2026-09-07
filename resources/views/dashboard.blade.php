@@ -33,6 +33,18 @@
     </div>
 @endif
 
+{{-- ==== PERSONAL WELCOME ====
+     Greets the logged-in user by name at the top of their own dashboard. --}}
+<div class="mb-6 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg shadow-sm px-5 py-4 flex items-center gap-3">
+    <div class="w-11 h-11 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+    </div>
+    <div>
+        <p class="text-white font-semibold text-lg leading-tight">Welcome, {{ Auth::user()->name }}! 👋</p>
+        <p class="text-blue-100 text-sm">{{ Auth::user()->role?->name ?? '' }} · {{ now()->format('l, F j, Y') }}</p>
+    </div>
+</div>
+
 {{-- ==== ROLE / PERMISSION CHECK ====
      Same helper used by the sidebar: $perm('module') returns true if the
      logged-in user's role is allowed to access that module.
@@ -43,12 +55,11 @@
 
     // Which sections this user is allowed to see:
     $canSeeProducts     = $perm('products');     // product count card
-    $canSeeSuppliers    = $perm('suppliers');    // supplier count card
-    $canSeeCustomers    = $perm('customers');    // customer count card
     $canSeeInventory    = $perm('inventory') || $perm('products') || $perm('stock_alerts');
                                                 // low-stock alert card + low-stock table
     $canSeePurchases    = $perm('purchases') || $perm('stock_receive');
                                                 // purchase workflow cards
+    $canSeeSales        = $perm('sales');       // sales workflow & recent sales
     $canSeeUsers        = $perm('users');       // admin/user management cards
 
     // When the user sees the admin/user dashboard, hide ALL other module cards
@@ -77,16 +88,36 @@
 
     // Purchase-related counts (only needed if the user can see purchase info).
     if ($canSeePurchases) {
-        $totalPurchases  = App\Models\Purchase::count();                          // all orders
-        $pendingPurchases  = App\Models\Purchase::where('status', 'pending')->count();  // awaiting receive
-        $receivedPurchases = App\Models\Purchase::where('status', 'received')->count(); // finance review
-        $approvedPurchases = App\Models\Purchase::where('status', 'approved')->count(); // done
+        $approvedPurchases = App\Models\Purchase::where('status', 'approved')->count(); // awaiting inventory receive
+        $receivedPurchases = App\Models\Purchase::where('status', 'received')->count(); // done (stock updated)
+
+        // The 5 most recently approved purchases, newest first (by approval time).
+        $recentApprovedPurchases = App\Models\Purchase::with('supplier')
+            ->where('status', 'approved')
+            ->latest('approved_at')
+            ->take(5)
+            ->get();
     }
 
     // Single-feature counts.
     if ($canSeeProducts)  { $totalProducts = App\Models\Product::count(); }
-    if ($canSeeSuppliers) { $totalSuppliers = App\Models\Supplier::count(); }
-    if ($canSeeCustomers) { $totalCustomers = App\Models\Customer::count(); }
+
+    // Sales: the 5 most recent sales, newest first (ordered by sale time).
+    if ($canSeeSales) {
+        $recentSales = App\Models\Sale::with(['customer', 'items.product.category'])
+            ->latest('sold_at')
+            ->take(5)
+            ->get();
+
+        // Flatten into one row per sale item, so Product / Category / Grade
+        // can each be shown for the specific product line actually sold.
+        $recentSaleItems = $recentSales->flatMap(function ($sale) {
+            return $sale->items->map(function ($item) use ($sale) {
+                $item->sale = $sale;
+                return $item;
+            });
+        });
+    }
 
     // User-management stats (only needed if the role can manage users, e.g. Admin).
     if ($canSeeUsers) {
@@ -98,9 +129,10 @@
     }
 @endphp
 
-{{-- ==== SUMMARY STAT CARDS (top row, 4 across) ====
+{{-- ==== SUMMARY STAT CARDS (single row) ====
+     Consolidated dashboard stats: one straight row of 4 cards.
      Only the cards for modules the user's role can access are rendered. --}}
-@if($showModuleCards && ($canSeeProducts || $canSeeSuppliers || $canSeeCustomers || $canSeeInventory))
+@if($showModuleCards && ($canSeeProducts || $canSeeInventory || $canSeePurchases))
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @if($canSeeProducts)
     {{-- Card 1: Total Products (only if role has 'products' permission) --}}
@@ -119,42 +151,8 @@
     </div>
     @endif
 
-    @if($canSeeSuppliers)
-    {{-- Card 2: Suppliers (only if role has 'suppliers' permission) --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-500">Suppliers</p>
-                <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalSuppliers }}</p>
-            </div>
-            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.139-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                </svg>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    @if($canSeeCustomers)
-    {{-- Card 3: Customers (only if role has 'customers' permission) --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-500">Customers</p>
-                <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalCustomers }}</p>
-            </div>
-            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                </svg>
-            </div>
-        </div>
-    </div>
-    @endif
-
     @if($canSeeInventory)
-    {{-- Card 4: Low Stock Alerts (only if role can see stock/inventory info).
+    {{-- Card: Low Stock Alerts (only if role can see stock/inventory info).
          The number turns red if there are any low/out-of-stock items. --}}
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
         <div class="flex items-center justify-between">
@@ -170,47 +168,15 @@
         </div>
     </div>
     @endif
-</div>
-@endif
 
-{{-- ==== PURCHASE WORKFLOW CARDS (second row) ====
-     Only rendered if the user's role can access purchases (purchases or stock_receive).
-     Each card links to the purchases page filtered by status. --}}
-@if($showModuleCards && $canSeePurchases)
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    {{-- Total Purchases → link to all purchases --}}
-    <a href="{{ route('purchases.index') }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    @if($canSeePurchases)
+    {{-- Approved Awaiting Receive → link to purchases filtered to 'approved' --}}
+    <a href="{{ route('purchases.index', ['status' => 'approved']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-gray-500">Total Purchases</p>
-                <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalPurchases }}</p>
-            </div>
-            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/></svg>
-            </div>
-        </div>
-    </a>
-
-    {{-- Awaiting Receive → link to purchases filtered to 'pending' --}}
-    <a href="{{ route('purchases.index', ['status' => 'pending']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-500">Awaiting Receive</p>
-                {{-- The number turns yellow if any purchases are waiting. --}}
-                <p class="text-2xl font-bold {{ $pendingPurchases > 0 ? 'text-yellow-600' : 'text-gray-800' }} mt-1">{{ $pendingPurchases }}</p>
-            </div>
-            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
-            </div>
-        </div>
-    </a>
-
-    {{-- Finance Review → link to purchases filtered to 'received' --}}
-    <a href="{{ route('purchases.index', ['status' => 'received']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-gray-500">Finance Review</p>
-                <p class="text-2xl font-bold {{ $receivedPurchases > 0 ? 'text-blue-600' : 'text-gray-800' }} mt-1">{{ $receivedPurchases }}</p>
+                <p class="text-sm text-gray-500">Approved - Awaiting Receive</p>
+                {{-- The number turns blue if any purchases are waiting for Inventory. --}}
+                <p class="text-2xl font-bold {{ $approvedPurchases > 0 ? 'text-blue-600' : 'text-gray-800' }} mt-1">{{ $approvedPurchases }}</p>
             </div>
             <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -218,18 +184,124 @@
         </div>
     </a>
 
-    {{-- Approved → link to purchases filtered to 'approved' --}}
-    <a href="{{ route('purchases.index', ['status' => 'approved']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    {{-- Received / Stock Updated → link to purchases filtered to 'received' --}}
+    <a href="{{ route('purchases.index', ['status' => 'received']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm text-gray-500">Approved</p>
-                <p class="text-2xl font-bold {{ $approvedPurchases > 0 ? 'text-green-600' : 'text-gray-800' }} mt-1">{{ $approvedPurchases }}</p>
+                <p class="text-sm text-gray-500">Received / Stock Updated</p>
+                <p class="text-2xl font-bold {{ $receivedPurchases > 0 ? 'text-green-600' : 'text-gray-800' }} mt-1">{{ $receivedPurchases }}</p>
             </div>
             <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
     </a>
+    @endif
+</div>
+@endif
+
+{{-- ==== RECENT SALES TABLE ====
+     Only rendered if the role has the 'sales' permission.
+     Lists the 5 most recent sales, newest first (ordered by sale time). --}}
+@if($showModuleCards && $canSeeSales)
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+        <div>
+            <h3 class="text-sm font-semibold text-gray-800">Recent Sales</h3>
+            <p class="text-xs text-gray-500">The 5 most recent sales (newest first)</p>
+        </div>
+        <a href="{{ route('sales.index') }}" class="text-xs font-medium text-blue-600 hover:text-blue-700">View all</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Grade</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Unit Price</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($recentSaleItems as $item)
+                    @php $sale = $item->sale; @endphp
+                    <tr class="{{ $loop->index % 2 === 1 ? 'bg-gray-50/50' : 'bg-white' }} hover:bg-blue-50/30 transition-colors border-b border-gray-100 last:border-0">
+                        <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">
+                            <a href="{{ route('sales.show', $sale) }}" class="text-blue-600 hover:text-blue-700">{{ $sale->reference_number }}</a>
+                        </td>
+                        <td class="px-4 py-3.5 font-medium text-gray-800">{{ $item->product->name ?? '—' }}</td>
+                        <td class="px-4 py-3.5 text-gray-500">{{ $item->product?->category?->name ?? '—' }}</td>
+                        <td class="px-4 py-3.5 text-gray-500">{{ $item->product?->grade ?? '—' }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $item->quantity }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">ETB {{ number_format($item->unit_price, 2) }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">ETB {{ number_format($item->line_total, 2) }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap">
+                            <x-status-badge :label="$sale->status_label" :variant="$sale->status_variant" />
+                        </td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $sale->sold_at?->format('M d, Y') ?? $sale->created_at->format('M d, Y') }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="9" class="px-4 py-6 text-center text-gray-500">No sales found. Record your first sale to get started.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
+{{-- ==== RECENT APPROVED PURCHASES TABLE ====
+     Only rendered if the role has the 'purchases' permission (Finance & Purchase Officer).
+     Lists the 5 most recently approved purchases, newest first (by approval time). --}}
+@if($showModuleCards && $canSeePurchases)
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+        <div>
+            <h3 class="text-sm font-semibold text-gray-800">Recent Approved Purchases</h3>
+            <p class="text-xs text-gray-500">The 5 most recently approved purchases (newest first)</p>
+        </div>
+        <a href="{{ route('purchases.index', ['status' => 'approved']) }}" class="text-xs font-medium text-blue-600 hover:text-blue-700">View all</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Supplier</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Qty</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Amount</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Approved Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($recentApprovedPurchases as $purchase)
+                    <tr class="{{ $loop->index % 2 === 1 ? 'bg-gray-50/50' : 'bg-white' }} hover:bg-blue-50/30 transition-colors border-b border-gray-100 last:border-0">
+                        <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">
+                            <a href="{{ route('purchases.show', $purchase) }}" class="text-blue-600 hover:text-blue-700">{{ $purchase->reference_number }}</a>
+                        </td>
+                        <td class="px-4 py-3.5 text-gray-500">{{ $purchase->supplier->name ?? '—' }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $purchase->total_quantity }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">ETB {{ number_format($purchase->total_amount, 2) }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap">
+                            <x-status-badge :label="$purchase->status_label" :variant="$purchase->status_variant" />
+                        </td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $purchase->approved_at?->format('M d, Y') ?? '—' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-6 text-center text-gray-500">No approved purchases yet.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 @endif
 

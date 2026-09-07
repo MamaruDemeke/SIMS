@@ -1,0 +1,373 @@
+@extends('layouts.app')
+
+@section('title', 'Create Sale - YEGNA TRADING PLC')
+
+@section('content')
+<x-page-header
+    title="Create Sale"
+    :breadcrumbs="[
+        ['label' => 'Home', 'href' => route('dashboard')],
+        ['label' => 'Sales', 'href' => route('sales.index')],
+        ['label' => 'Create Sale'],
+    ]"
+/>
+
+<div class="max-w-6xl">
+    <form method="POST" action="{{ route('sales.store') }}" id="sale-form">
+        @csrf
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="customer_id" class="block text-sm font-medium text-gray-700 mb-1">Customer <span class="text-red-500">*</span></label>
+                    <select name="customer_id" id="customer_id" required
+                            class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('customer_id') border-red-500 @enderror">
+                        <option value="">Select Customer</option>
+                        @foreach($customers as $customer)
+                            <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>{{ $customer->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('customer_id')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <input type="text" name="notes" id="notes" value="{{ old('notes') }}"
+                           class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Optional notes">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-gray-700">Sale Items</h3>
+                <button type="button" onclick="addRow()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                    Add Product
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <div>
+                    <label for="catFilter" class="block text-sm font-medium text-gray-700 mb-1">Select Category</label>
+                    <select id="catFilter" onchange="filterProducts()"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Categories</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="prodFilter" class="block text-sm font-medium text-gray-700 mb-1">Select Product (by type/code)</label>
+                    <select id="prodFilter" onchange="addSelectedProduct()"
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Product</option>
+                    </select>
+                    <p class="mt-1 text-xs text-gray-400">Choosing a product opens a line where you can add one or more grade variants.</p>
+                </div>
+            </div>
+
+            <div id="items-error" class="hidden mb-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600"></div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm" id="items-table">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase w-8">#</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-40">Product / Grade</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-16">Stock</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-16">Qty</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Unit Price (ETB)</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Grade</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-20">Diameter</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-16">Size</th>
+                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase w-24">Total</th>
+                            <th class="px-3 py-2 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-body">
+                    </tbody>
+                    <tfoot id="items-foot">
+                        <tr class="bg-gray-50 border-t border-gray-200">
+                            <td colspan="9" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
+                            <td class="px-3 py-3 text-right text-sm font-bold text-gray-900" id="grand-total">ETB 0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 mt-6">
+            <a href="{{ route('sales.index') }}" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                Record Sale
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const allProducts = @json($productsJson);
+    const rowIndex = {current: 0};
+
+    const catFilter = document.getElementById('catFilter');
+    const prodFilter = document.getElementById('prodFilter');
+
+    // -- Step 1: group the flat product list by product_code (base product) --
+    function buildGroups(catId) {
+        const products = allProducts.filter(p => !catId || String(p.category_id) === catId);
+        const map = new Map();
+        products.forEach(p => {
+            const key = p.code || p.name;
+            if (!map.has(key)) map.set(key, { code: key, variants: [] });
+            map.get(key).variants.push(p);
+        });
+        return Array.from(map.values());
+    }
+
+    function filterProducts() {
+        const catId = catFilter ? catFilter.value : '';
+        const groups = buildGroups(catId);
+        prodFilter.innerHTML = '<option value="">Select Product</option>';
+        groups.forEach((g, gi) => {
+            const opt = document.createElement('option');
+            opt.value = g.code;
+            opt.textContent = g.variants.length > 0 ? g.code + ' — ' + g.variants[0].name : g.code;
+            prodFilter.appendChild(opt);
+        });
+    }
+
+    function addSelectedProduct() {
+        const code = prodFilter.value;
+        if (!code) return;
+        // Find the group with this code (respecting the current category filter).
+        const catId = catFilter ? catFilter.value : '';
+        const group = buildGroups(catId).find(g => g.code === code);
+        if (group) addLineGroup(group);
+        prodFilter.value = '';
+    }
+
+    // "Add Product" button: opens an empty line group with a base-product picker.
+    function addRow() {
+        const catId = catFilter ? catFilter.value : '';
+        const groups = buildGroups(catId);
+        if (groups.length === 0) { alert('No products available. Select a category first.'); return; }
+        addLineGroupWithPicker(groups);
+    }
+
+    function addLineGroupWithPicker(groups) {
+        const tbody = document.getElementById('items-body');
+        const groupIdx = ++rowIndex.current;
+        const container = document.createElement('tr');
+        container.id = 'grp-' + groupIdx;
+        container.className = 'align-top';
+        const pickOptions = groups.map(g =>
+            `<option value="${g.code}">${g.code} — ${g.variants[0].name}</option>`
+        ).join('');
+        container.innerHTML = `
+            <td class="px-3 py-2 align-top pt-3">
+                <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
+            </td>
+            <td colspan="9" class="px-3 py-2">
+                <div class="mb-2 flex items-center gap-2">
+                    <select onchange="setLineGroup(${groupIdx}, this.value)" class="px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select product (type/code)</option>
+                        ${pickOptions}
+                    </select>
+                    <button type="button" onclick="addGrade(${groupIdx})" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        Add grade
+                    </button>
+                    <button type="button" onclick="removeLineGroup(${groupIdx})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                </div>
+                <table class="w-full">
+                    <tbody id="grades-${groupIdx}"></tbody>
+                </table>
+            </td>
+        `;
+        container._pickGroups = Object.fromEntries(groups.map(g => [g.code, g]));
+        tbody.appendChild(container);
+        document.getElementById('items-error').classList.add('hidden');
+    }
+
+    function setLineGroup(groupIdx, code) {
+        const container = document.getElementById('grp-' + groupIdx);
+        if (!container || !code) return;
+        container._group = container._pickGroups[code];
+        document.getElementById('grades-' + groupIdx).innerHTML = '';
+    }
+
+    // -- Step 2: a "line group" holds several grade-variant rows of one product --
+    function addLineGroup(group) {
+        const tbody = document.getElementById('items-body');
+        const groupIdx = ++rowIndex.current;
+        const container = document.createElement('tr');
+        container.id = 'grp-' + groupIdx;
+        container.className = 'align-top';
+        container.innerHTML = `
+            <td class="px-3 py-2 align-top pt-3">
+                <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
+            </td>
+            <td colspan="9" class="px-3 py-2">
+                <div class="mb-2 flex items-center gap-2">
+                    <span class="text-sm font-semibold text-gray-800">${group.code}</span>
+                    <button type="button" onclick="addGrade(${groupIdx})" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        Add grade
+                    </button>
+                    <button type="button" onclick="removeLineGroup(${groupIdx})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                </div>
+                <table class="w-full">
+                    <tbody id="grades-${groupIdx}"></tbody>
+                </table>
+            </td>
+        `;
+        tbody.appendChild(container);
+        addGrade(groupIdx, group);
+        document.getElementById('items-error').classList.add('hidden');
+    }
+
+    function addGrade(groupIdx, group) {
+        // group is only passed on first call; otherwise read from the stored variant list.
+        const tbody = document.getElementById('grades-' + groupIdx);
+        const container = document.getElementById('grp-' + groupIdx);
+        const stored = container._group || group;
+        container._group = stored;
+
+        const itemIdx = ++rowIndex.current;
+        const options = stored.variants.map(v =>
+            `<option value="${v.id}" data-price="${v.price||0}" data-stock="${v.stock||0}" data-type="${v.type||''}" data-diameter="${v.diameter||''}" data-size="${v.size||''}">${v.name}${v.type? ' — G '+v.type : ''}</option>`
+        ).join('');
+
+        const row = document.createElement('tr');
+        row.id = 'grade-' + itemIdx;
+        row.className = 'border-t border-gray-100';
+        row.innerHTML = `
+            <td class="px-2 py-2">
+                <select name="items[${itemIdx}][product_id]" required class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="fillDefaults(this, ${itemIdx})">
+                    <option value="">Select grade</option>
+                    ${options}
+                </select>
+            </td>
+            <td class="px-2 py-2 text-right text-xs text-gray-500 stock-cell" id="stock-${itemIdx}">—</td>
+            <td class="px-2 py-2">
+                <input type="number" name="items[${itemIdx}][quantity]" min="1" value="1" required oninput="calcRow(${itemIdx})"
+                       class="w-full px-2 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            </td>
+            <td class="px-2 py-2">
+                <input type="number" name="items[${itemIdx}][unit_price]" min="0" step="0.01" value="" required oninput="calcRow(${itemIdx})"
+                       class="w-full px-2 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            </td>
+            <td class="px-2 py-2">
+                <input type="text" name="items[${itemIdx}][type]" readonly tabindex="-1"
+                       class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
+            </td>
+            <td class="px-2 py-2">
+                <input type="text" name="items[${itemIdx}][diameter]" readonly tabindex="-1"
+                       class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
+            </td>
+            <td class="px-2 py-2">
+                <input type="text" name="items[${itemIdx}][size]" readonly tabindex="-1"
+                       class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
+            </td>
+            <td class="px-2 py-2 text-right text-sm text-gray-600" id="total-${itemIdx}">ETB 0.00</td>
+            <td class="px-2 py-2">
+                <button type="button" onclick="removeGrade(${itemIdx})" class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Remove grade">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        calcGrandTotal();
+    }
+
+    function fillDefaults(select, idx) {
+        const opt = select.options[select.selectedIndex];
+        if (!opt || !opt.value) return;
+        const row = document.getElementById('grade-' + idx);
+        const price = row.querySelector(`input[name="items[${idx}][unit_price]"]`);
+        const type = row.querySelector(`input[name="items[${idx}][type]"]`);
+        const diam = row.querySelector(`input[name="items[${idx}][diameter]"]`);
+        const size = row.querySelector(`input[name="items[${idx}][size]"]`);
+        const stock = row.querySelector(`#stock-${idx}`);
+        if (price) price.value = opt.dataset.price || 0;
+        if (type) type.value = opt.dataset.type || '';
+        if (diam) diam.value = opt.dataset.diameter || '';
+        if (size) size.value = opt.dataset.size || '';
+        if (stock) stock.textContent = opt.dataset.stock ?? '—';
+        calcRow(idx);
+    }
+
+    function removeGrade(idx) {
+        const row = document.getElementById('grade-' + idx);
+        if (row) { row.remove(); calcGrandTotal(); }
+    }
+
+    function removeLineGroup(gid) {
+        const cont = document.getElementById('grp-' + gid);
+        if (cont) { cont.remove(); calcGrandTotal(); }
+    }
+
+    function calcRow(idx) {
+        const qty = parseFloat(document.querySelector(`#grade-${idx} input[name="items[${idx}][quantity]"]`)?.value) || 0;
+        const price = parseFloat(document.querySelector(`#grade-${idx} input[name="items[${idx}][unit_price]"]`)?.value) || 0;
+        const total = qty * price;
+        const el = document.getElementById('total-' + idx);
+        if (el) el.textContent = 'ETB ' + total.toLocaleString('en', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        calcGrandTotal();
+    }
+
+    function calcGrandTotal() {
+        let grand = 0;
+        document.querySelectorAll('[id^="total-"]').forEach(el => {
+            const val = parseFloat(el.textContent.replace(/[^0-9.-]/g, '') || 0);
+            if (!isNaN(val)) grand += val;
+        });
+        document.getElementById('grand-total').textContent = 'ETB ' + grand.toLocaleString('en', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    document.getElementById('sale-form').addEventListener('submit', function(e) {
+        const errEl = document.getElementById('items-error');
+        const customer = document.getElementById('customer_id').value;
+        if (!customer) {
+            e.preventDefault();
+            errEl.textContent = 'Please select a customer.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+        const rows = document.querySelectorAll('#items-body tr[id^="grade-"]');
+        if (rows.length === 0) {
+            e.preventDefault();
+            errEl.textContent = 'Please add at least one product/grade.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+        let hasError = false;
+        rows.forEach(row => {
+            const sel = row.querySelector('select[name$="[product_id]"]');
+            const qty = row.querySelector('input[name$="[quantity]"]');
+            const price = row.querySelector('input[name$="[unit_price]"]');
+            if (sel && !sel.value) { hasError = true; sel.classList.add('border-red-500'); }
+            if (qty && (!qty.value || parseInt(qty.value) < 1)) { hasError = true; qty.classList.add('border-red-500'); }
+            if (price && (!price.value || parseFloat(price.value) < 0)) { hasError = true; price.classList.add('border-red-500'); }
+            const stock = row.querySelector('.stock-cell')?.textContent;
+            if (sel && sel.value && stock && stock !== '—' && parseInt(stock) < parseInt(qty?.value || 0)) {
+                hasError = true;
+                if (qty) qty.classList.add('border-red-500');
+            }
+        });
+        if (hasError) {
+            e.preventDefault();
+            errEl.textContent = 'Please fill every grade row (product, quantity and price) and make sure quantity does not exceed stock.';
+            errEl.classList.remove('hidden');
+        }
+    });
+
+    filterProducts();
+</script>
+@endsection

@@ -24,6 +24,7 @@ use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StockNotificationController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
@@ -85,6 +86,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:products')->group(function () {
         Route::resource('products', ProductController::class)->except(['show']);
+        // Notify the Purchase Officer to buy a product (from the product list).
+        Route::post('/products/{product}/notify-purchase', [StockNotificationController::class, 'notifyPurchase'])->name('products.notifyPurchase');
     });
 
     // Inventory (current stock): index + edit minimum stock.
@@ -114,7 +117,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/purchase-requests', [StockNotificationController::class, 'pending'])->name('stock-notifications.pending');
     });
 
-    // ---- Purchases — Inventory Manager (view pending + receive) ----
+    // ---- Purchases — Inventory Manager (view approved + receive/update stock) ----
     Route::middleware('role:stock_receive')->group(function () {
         Route::get('/inventory/purchases', [PurchaseController::class, 'pendingList'])->name('inventory.purchases.index');
         Route::get('/inventory/purchases/{purchase}', [PurchaseController::class, 'show'])->name('inventory.purchases.show');
@@ -122,12 +125,22 @@ Route::middleware('auth')->group(function () {
         Route::post('/inventory/purchases/{purchase}/reject', [PurchaseController::class, 'reject'])->name('purchases.reject');
     });
 
-    // ---- Purchases — Finance (view receipts + approve/reject) ----
+    // ---- Purchases — Finance (view pending + approve/reject) ----
     Route::middleware('role:purchases')->group(function () {
         Route::get('/finance/receipts', [PurchaseController::class, 'receiptList'])->name('purchases.receipts');
         Route::get('/finance/receipts/{purchase}', [PurchaseController::class, 'show'])->name('purchases.receipts.show');
         Route::post('/finance/receipts/{purchase}/approve', [PurchaseController::class, 'approve'])->name('purchases.approve');
         Route::post('/finance/receipts/{purchase}/reject', [PurchaseController::class, 'reject'])->name('purchases.financeReject');
+    });
+
+    // ---- Sales — Sales Officer (create sales) + Finance (approve/reject) ----
+    Route::middleware('role:sales')->group(function () {
+        Route::resource('sales', SaleController::class)
+            ->only(['index', 'create', 'store', 'show']);
+
+        // Finance approves (deducts stock) / rejects a pending sale.
+        Route::post('/sales/{sale}/approve', [SaleController::class, 'approve'])->name('sales.approve');
+        Route::post('/sales/{sale}/reject', [SaleController::class, 'reject'])->name('sales.reject');
     });
 
     // ---- Customers ----
@@ -147,9 +160,13 @@ Route::middleware('auth')->group(function () {
     });
 
     // ---- App Notifications (custom in-app alerts) ----
-    // List notifications (paginated), loading each one's related product.
+    // List notifications (paginated), loading each one's related product and sender.
+    // Filtered by user_id so each role only sees their own notifications.
     Route::get('/notifications', function () {
-        $notifications = App\Models\Notification::with('product')->orderBy('created_at', 'desc')->paginate(20);
+        $notifications = App\Models\Notification::where('user_id', Auth::id())
+            ->with(['product', 'sender', 'purchase'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
         return view('notifications.index', compact('notifications'));
     })->name('notifications.index');
 
@@ -159,11 +176,17 @@ Route::middleware('auth')->group(function () {
         return back()->with('success', 'Notification marked as read.');
     })->name('notifications.markRead');
 
-    // Mark ALL unread notifications as read.
+    // Mark ALL unread notifications as read (only current user's).
     Route::post('/notifications/read-all', function () {
-        App\Models\Notification::unread()->update(['is_read' => true]);
+        App\Models\Notification::unread()->where('user_id', Auth::id())->update(['is_read' => true]);
         return back()->with('success', 'All notifications marked as read.');
     })->name('notifications.readAll');
+
+    // AJAX endpoint used by the real-time unread badge poller.
+    Route::get('/notifications/unread-count', function () {
+        $count = App\Models\Notification::unread()->where('user_id', Auth::id())->count();
+        return response()->json(['unread_count' => $count]);
+    })->name('notifications.unreadCount');
 
     // ---- User display settings (dark mode, font size, etc.) ----
     Route::get('/user/settings', [UserSettingController::class, 'get'])->name('user.settings.get');

@@ -12,7 +12,17 @@
 />
 
 @if($notifications->count() > 0)
-    <div class="mb-4 flex justify-end">
+    <div class="mb-4 flex items-center justify-between gap-2 flex-wrap">
+        <label class="inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <input type="checkbox" id="select-all" onchange="toggleAll()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" title="Select all">
+            Select all
+        </label>
+        <div class="flex items-center gap-2 flex-wrap">
+        <button type="button" onclick="deleteSelected()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+            Delete Selected
+        </button>
         <form method="POST" action="{{ route('notifications.readAll') }}">
             @csrf
             <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
@@ -22,6 +32,7 @@
                 Mark All as Read
             </button>
         </form>
+        </div>
     </div>
 @endif
 
@@ -51,6 +62,9 @@
         @endphp
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 {{ $notification->is_read ? 'opacity-60' : '' }} {{ $target ? 'transition-colors hover:bg-blue-50/40' : '' }}">
             <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 pt-1">
+                    <input type="checkbox" class="notif-check rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="{{ $notification->id }}" title="Select">
+                </div>
                 <div class="flex-shrink-0 mt-0.5">
                     @if($notification->type === 'out_of_stock')
                         <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -122,6 +136,13 @@
                                     </button>
                                 </form>
                             @endif
+                            <form method="POST" action="{{ route('notifications.delete', $notification) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" onclick="return confirm('Delete this notification?')" class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -150,4 +171,38 @@
 @if($notifications->hasPages())
     <x-pagination :paginator="$notifications" label="notifications" />
 @endif
+
+<script>
+function toggleAll() {
+    const all = document.getElementById('select-all');
+    document.querySelectorAll('.notif-check').forEach(cb => cb.checked = all.checked);
+}
+
+function deleteSelected() {
+    const ids = Array.from(document.querySelectorAll('.notif-check:checked')).map(cb => cb.value);
+    if (ids.length === 0) {
+        alert('Select at least one notification.');
+        return;
+    }
+    if (!confirm('Delete ' + ids.length + ' selected notification(s)?')) return;
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route('notifications.deleteSelected') }}';
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = '{{ csrf_token() }}';
+    form.appendChild(csrf);
+    ids.forEach(id => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'ids[]';
+        inp.value = id;
+        form.appendChild(inp);
+    });
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
 @endsection

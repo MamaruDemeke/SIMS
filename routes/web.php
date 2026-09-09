@@ -176,6 +176,26 @@ Route::middleware('auth')->group(function () {
         return back()->with('success', 'Notification marked as read.');
     })->name('notifications.markRead');
 
+    // Delete a single notification (marks it read first, then deletes it).
+    Route::delete('/notifications/{notification}/delete', function (App\Models\Notification $notification) {
+        $notification->markAsRead();
+        $notification->delete();
+        return back()->with('success', 'Notification deleted.');
+    })->name('notifications.delete');
+
+    // Delete many selected notifications at once (marks each read, then deletes).
+    Route::post('/notifications/delete-selected', function () {
+        $ids = (array) request()->input('ids', []);
+        $notifications = App\Models\Notification::where('user_id', Auth::id())->whereIn('id', $ids)->get();
+        $count = 0;
+        foreach ($notifications as $notification) {
+            $notification->markAsRead();
+            $notification->delete();
+            $count++;
+        }
+        return back()->with('success', $count . ' notification(s) deleted.');
+    })->name('notifications.deleteSelected');
+
     // Mark ALL unread notifications as read (only current user's).
     Route::post('/notifications/read-all', function () {
         App\Models\Notification::unread()->where('user_id', Auth::id())->update(['is_read' => true]);

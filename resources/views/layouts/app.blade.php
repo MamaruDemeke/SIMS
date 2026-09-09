@@ -293,7 +293,7 @@
         </aside>
 
         {{-- ==================== MAIN AREA (everything right of the sidebar) ==================== --}}
-        <div class="flex-1 flex flex-col min-h-screen">
+        <div class="flex-1 flex flex-col h-screen overflow-hidden">
 
             {{-- ==================== HEADER (top bar) ==================== --}}
             <header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
@@ -358,7 +358,7 @@
             {{-- ==================== MAIN CONTENT ====================
                  This is where each page's @section('content') is injected.
                  Flash messages (success/error) are shown here above the content. --}}
-            <main class="flex-1 p-4 lg:p-6">
+            <main class="flex-1 overflow-y-auto p-4 lg:p-6">
 
                 {{-- Green "success" banner — shown when a controller did a successful action
                      and flashed a message via ->with('success', ...). --}}

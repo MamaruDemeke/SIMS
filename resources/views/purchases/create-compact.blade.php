@@ -13,9 +13,10 @@
     ]"
 />
 
-<div class="max-w-3xl">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <form method="POST" action="{{ route('purchases.store') }}">
+<div class="max-w-5xl">
+    <div class="flex flex-col lg:flex-row gap-6">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex-1 min-w-0">
+        <form method="POST" action="{{ route('purchases.store') }}" id="purchase-form">
             @csrf
             <input type="hidden" name="stock_notification_id" value="{{ $preselected['notification_id'] }}">
 
@@ -51,7 +52,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="qty" class="block text-sm font-medium text-gray-700 mb-1">Quantity <span class="text-red-500">*</span></label>
-                        <input type="number" name="items[0][quantity]" id="qty" min="1" value="{{ old('items.0.quantity', 1) }}" required
+                        <input type="number" name="items[0][quantity]" id="qty" min="1" value="{{ old('items.0.quantity') }}" placeholder="0" required
                                class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('items.0.quantity') border-red-500 @enderror">
                         @error('items.0.quantity')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -76,15 +77,20 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3 mt-6 pt-5 border-t border-gray-200">
-                <a href="{{ route('stock-notifications.pending') }}" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
-                    Cancel
-                </a>
-                <button type="submit" class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                    Save as Draft
-                </button>
-            </div>
         </form>
+    </div>
+
+    <div class="lg:w-56 flex-shrink-0">
+        <div class="lg:sticky lg:top-20 space-y-2">
+            <button type="submit" form="purchase-form" class="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                Save as Draft
+            </button>
+            <a href="{{ route('stock-notifications.pending') }}" class="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                Cancel
+            </a>
+        </div>
+    </div>
     </div>
 </div>
 @endsection

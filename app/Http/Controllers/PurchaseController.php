@@ -125,12 +125,11 @@ class PurchaseController extends Controller
         // Active categories for the category filter.
         $categories = Category::where('status', true)->orderBy('name')->get();
 
-        // All active products (with their categories). The purchase form filters
-        // these by the selected supplier using the supplier_product relationship.
-        $products = Product::where('status', true)->with(['category', 'suppliers'])->orderBy('name')->get();
+        // All active products (with their categories). Any product can be bought
+        // from any supplier — the purchase form is NOT limited by supplier.
+        $products = Product::where('status', true)->with(['category'])->orderBy('name')->get();
 
-        // Convert to JSON for JavaScript. Include supplier_ids so the form
-        // only shows products that the selected supplier actually sells.
+        // Convert to JSON for JavaScript so the picker can list every product.
         $productsJson = $products->map(fn($p) => [
             'id' => $p->id,
             'name' => $p->name,
@@ -141,7 +140,6 @@ class PurchaseController extends Controller
             'type' => $p->grade,
             'diameter' => $p->diameter,
             'size' => $p->length,
-            'supplier_ids' => $p->suppliers->pluck('id')->map(fn($id) => (string) $id)->toArray(),
         ])->values();
 
         // Pending stock notifications (optional — can still use them).
@@ -154,10 +152,40 @@ class PurchaseController extends Controller
             'current_quantity' => $n->current_quantity,
         ])->values();
 
-        // ---- Preselect from a stock notification (if the officer came from
-        //      the pending "Create Purchase" button). ----
+        // ---- Preselect from stock notification(s) if the officer came from
+        //      the pending "Create Purchase" button(s). ----
         $preselected = null;
-        if ($notificationId = request()->query('notification')) {
+        $preselectedItems = [];
+
+        if ($notificationIds = request()->query('notifications')) {
+            // Multi-select: several notified products bundled into ONE order.
+            $notificationIds = (array) $notificationIds;
+            $notifs = StockNotification::with('product')->pending()->whereIn('id', $notificationIds)->get();
+            foreach ($notifs as $notification) {
+                if (!$notification->product) continue;
+                $product = $notification->product;
+                // Suggested order qty = the shortfall the inventory manager
+                // flagged (min stock minus what is currently in stock).
+                $preselectedItems[] = [
+                    'notification_id' => $notification->id,
+                    'suggested_qty' => max((int) $notification->minimum_stock - (int) $notification->current_quantity, 1),
+                    'product' => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'code' => $product->product_code,
+                        'price' => $product->purchase_price,
+                        'category_id' => $product->category_id,
+                        'unit' => $product->unit,
+                        'type' => $product->grade,
+                        'diameter' => $product->diameter,
+                        'size' => $product->length,
+                    ],
+                ];
+            }
+            $preselected = $preselectedItems[0] ?? null;
+        }
+
+        if (!$preselected && ($notificationId = request()->query('notification'))) {
             $notification = StockNotification::with('product')->pending()->find($notificationId);
             if ($notification && $notification->product) {
                 $product = $notification->product;
@@ -175,17 +203,29 @@ class PurchaseController extends Controller
                         'size' => $product->length,
                     ],
                 ];
+                $preselectedItems = [$preselected];
             }
         }
 
-        if ($preselected) {
-            // Opened from a notification → show a single compact form:
+        if ($preselected && count($preselectedItems) <= 1) {
+            // Opened from a single notification → show a single compact form:
             // just pick a supplier and set the quantity + price for the one
             // pre-selected product.
+            if (!isset($product)) {
+                $product = StockNotification::with('product')->pending()
+                    ->find($preselected['notification_id'])?->product;
+            }
             return view('purchases.create-compact', compact('suppliers', 'preselected', 'product'));
         }
 
-        return view('purchases.create', compact('suppliers', 'categories', 'products', 'productsJson', 'notifications', 'notificationsJson', 'preselected'));
+        if (count($preselectedItems) > 1) {
+            // Opened from "Create Purchase for Selected" → show ONE simple form
+            // with a fixed pre-filled row per notified product. Only the
+            // Supplier and the price are editable; everything else is read-only.
+            return view('purchases.create-selected', compact('suppliers', 'preselectedItems'));
+        }
+
+        return view('purchases.create', compact('suppliers', 'categories', 'products', 'productsJson', 'notifications', 'notificationsJson', 'preselected', 'preselectedItems'));
     }
 
     /**
@@ -200,6 +240,8 @@ class PurchaseController extends Controller
         // Validate the submitted data.
         $request->validate([
             'stock_notification_id' => 'nullable|exists:stock_notifications,id', // optional
+            'stock_notification_ids' => 'nullable|array', // optional multi-select
+            'stock_notification_ids.*' => 'exists:stock_notifications,id',
             'supplier_id' => 'required|exists:suppliers,id',
             'items' => 'required|array|min:1', // at least one line
             'items.*.product_id' => 'required|exists:products,id',
@@ -208,12 +250,17 @@ class PurchaseController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // If a notification was provided, make sure it isn't already fulfilled.
-        $notification = null;
-        if ($request->stock_notification_id) {
-            $notification = StockNotification::findOrFail($request->stock_notification_id);
-            if ($notification->fulfilled) {
-                return back()->withInput()->with('error', 'This notification has already been fulfilled.');
+        // Collect every notification that should be attached to this purchase
+        // (single "Create Purchase" OR multiple "Create Purchase for Selected").
+        $notificationIds = collect(array_merge(
+            $request->stock_notification_ids ?? [],
+            $request->stock_notification_id ? [$request->stock_notification_id] : [],
+        ))->unique()->values();
+
+        if ($notificationIds->isNotEmpty()) {
+            $fulfilled = StockNotification::whereIn('id', $notificationIds)->where('fulfilled', true)->count();
+            if ($fulfilled > 0) {
+                return back()->withInput()->with('error', 'One of these notifications has already been fulfilled.');
             }
         }
 
@@ -233,7 +280,7 @@ class PurchaseController extends Controller
             // Create the purchase header row.
             $purchase = Purchase::create([
                 'supplier_id' => $request->supplier_id,
-                'stock_notification_id' => $notification?->id,
+                'stock_notification_id' => $request->stock_notification_id,
                 'reference_number' => Purchase::generateReferenceNumber(), // e.g. PUR-00005
                 'status' => 'draft',
                 'total_amount' => $total,
@@ -242,9 +289,11 @@ class PurchaseController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            // Remember which notification this purchase resolves (if any).
-            if ($notification) {
-                $notification->update(['purchase_id' => $purchase->id]);
+            // Remember which notification(s) this purchase resolves (if any).
+            if ($notificationIds->isNotEmpty()) {
+                StockNotification::whereIn('id', $notificationIds)
+                    ->where('fulfilled', false)
+                    ->update(['purchase_id' => $purchase->id]);
             }
 
             // Create one PurchaseItem row per line item.
@@ -475,10 +524,9 @@ class PurchaseController extends Controller
                 ]);
             }
 
-            // Mark the original low-stock notification as resolved (fulfilled).
-            if ($purchase->stock_notification_id) {
-                StockNotification::where('id', $purchase->stock_notification_id)->update(['fulfilled' => true]);
-            }
+            // Mark the original low-stock notification(s) as resolved
+            // (fulfilled) — works for both single and multi-select purchases.
+            StockNotification::where('purchase_id', $purchase->id)->update(['fulfilled' => true]);
 
             DB::commit();
         } catch (\Exception $e) {

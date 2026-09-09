@@ -13,8 +13,9 @@
     ]"
 />
 
-<div class="max-w-5xl">
-    <form method="POST" action="{{ route('purchases.update', $purchase) }}" id="purchase-form">
+<div class="max-w-7xl">
+    <div class="flex flex-col lg:flex-row gap-6">
+    <form method="POST" action="{{ route('purchases.update', $purchase) }}" id="purchase-form" class="flex-1 min-w-0">
         @csrf
         @method('PUT')
 
@@ -27,9 +28,6 @@
                         <option value="">Select Supplier</option>
                         @foreach($suppliers as $supplier)
                             <option value="{{ $supplier->id }}"
-                                data-type="{{ $supplier->default_type }}"
-                                data-diameter="{{ $supplier->default_diameter }}"
-                                data-size="{{ $supplier->default_size }}"
                                 {{ old('supplier_id', $purchase->supplier_id) == $supplier->id ? 'selected' : '' }}>
                                 {{ $supplier->name }}
                             </option>
@@ -44,15 +42,6 @@
                     <input type="text" name="notes" id="notes" value="{{ old('notes', $purchase->notes) }}"
                            class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Optional notes">
-                </div>
-            </div>
-
-            <div id="supplier-defaults" class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg {{ $purchase->supplier ? '' : 'hidden' }}">
-                <p class="text-xs font-medium text-blue-700 mb-1">Supplier Default Rebar Specs</p>
-                <div class="flex gap-4 text-sm text-blue-800">
-                    <span>Type: <strong id="default-type">{{ $purchase->supplier->default_type ?? '—' }}</strong></span>
-                    <span>Diameter: <strong id="default-diameter">{{ $purchase->supplier->default_diameter ?? '—' }}</strong></span>
-                    <span>Size: <strong id="default-size">{{ $purchase->supplier->default_size ?? '—' }}</strong></span>
                 </div>
             </div>
         </div>
@@ -96,15 +85,22 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-3 mt-6">
-            <a href="{{ route('purchases.index') }}" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
-                Cancel
-            </a>
-            <button type="submit" class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                Update Purchase
-            </button>
+        </div>
         </div>
     </form>
+
+    <div class="lg:w-56 flex-shrink-0">
+        <div class="lg:sticky lg:top-20 space-y-2">
+            <button type="submit" form="purchase-form" class="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                Update Purchase
+            </button>
+            <a href="{{ route('purchases.index') }}" class="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                Cancel
+            </a>
+        </div>
+    </div>
+    </div>
 </div>
 
 <script>
@@ -200,19 +196,6 @@ function calcGrandTotal() {
     });
     document.getElementById('grand-total').textContent = 'ETB ' + grand.toLocaleString('en', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
-
-document.getElementById('supplier_id').addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    const defaultsEl = document.getElementById('supplier-defaults');
-    if (opt && opt.value) {
-        document.getElementById('default-type').textContent = opt.dataset.type || '—';
-        document.getElementById('default-diameter').textContent = opt.dataset.diameter || '—';
-        document.getElementById('default-size').textContent = opt.dataset.size || '—';
-        defaultsEl.classList.remove('hidden');
-    } else {
-        defaultsEl.classList.add('hidden');
-    }
-});
 
 document.getElementById('purchase-form').addEventListener('submit', function(e) {
     const rows = document.querySelectorAll('#items-body tr');

@@ -15,14 +15,31 @@
 <div class="space-y-6">
     @if($notifications->count() > 0)
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-200 bg-blue-50">
-            <h3 class="text-sm font-semibold text-blue-700">Pending Stock Notifications from Inventory Manager</h3>
-            <p class="text-xs text-blue-600">Create a purchase order for each notification to fulfill the request</p>
+        <div class="px-4 py-3 border-b border-gray-200 bg-blue-50 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+                <h3 class="text-sm font-semibold text-blue-700">Pending Stock Notifications from Inventory Manager</h3>
+                <p class="text-xs text-blue-600">Tick the requests you want, then create ONE purchase order for all of them. Create a purchase order for each notification to fulfill the request</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="createPurchaseForSelected()"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                    Create Purchase for Selected
+                </button>
+                <button type="button" onclick="clearSelection()"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    Cancel
+                </button>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-10">
+                            <input type="checkbox" id="select-all" onchange="toggleAll()" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" title="Select all">
+                        </th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Product</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
@@ -36,6 +53,9 @@
                 <tbody>
                     @foreach($notifications as $notif)
                         <tr class="border-b border-gray-100 {{ $loop->index % 2 === 1 ? 'bg-gray-50/50' : '' }}">
+                            <td class="px-4 py-3 text-center">
+                                <input type="checkbox" class="notif-check rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="{{ $notif->id }}">
+                            </td>
                             <td class="px-4 py-3 text-gray-500">{{ $notifications->firstItem() + $loop->index }}</td>
                             <td class="px-4 py-3 font-medium text-gray-800">{{ $notif->product->name ?? '—' }}</td>
                             <td class="px-4 py-3">
@@ -72,4 +92,27 @@
     </div>
     @endif
 </div>
+
+<script>
+function toggleAll() {
+    const all = document.getElementById('select-all');
+    document.querySelectorAll('.notif-check').forEach(cb => cb.checked = all.checked);
+}
+
+function clearSelection() {
+    const all = document.getElementById('select-all');
+    if (all) all.checked = false;
+    document.querySelectorAll('.notif-check').forEach(cb => cb.checked = false);
+}
+
+function createPurchaseForSelected() {
+    const ids = Array.from(document.querySelectorAll('.notif-check:checked')).map(cb => cb.value);
+    if (ids.length === 0) {
+        alert('Select at least one purchase request.');
+        return;
+    }
+    const qs = ids.map(id => 'notifications[]=' + encodeURIComponent(id)).join('&');
+    window.location.href = '{{ route('purchases.create') }}' + '?' + qs;
+}
+</script>
 @endsection

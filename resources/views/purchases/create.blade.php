@@ -12,10 +12,14 @@
     ]"
 />
 
-<div class="max-w-6xl">
-    <form method="POST" action="{{ route('purchases.store') }}" id="purchase-form">
-        @csrf
-        <input type="hidden" name="stock_notification_id" value="{{ \Illuminate\Support\Arr::get($preselected ?? [], 'notification_id') }}">
+<div class="max-w-7xl">
+        <div class="flex flex-col lg:flex-row gap-6">
+        <form method="POST" action="{{ route('purchases.store') }}" id="purchase-form" class="flex-1 min-w-0">
+            @csrf
+            <input type="hidden" name="stock_notification_id" value="{{ \Illuminate\Support\Arr::get($preselected ?? [], 'notification_id') }}">
+            @foreach($preselectedItems ?? [] as $pi)
+                <input type="hidden" name="stock_notification_ids[]" value="{{ $pi['notification_id'] }}">
+            @endforeach
 
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -26,9 +30,6 @@
                         <option value="">Select Supplier</option>
                         @foreach($suppliers as $supplier)
                             <option value="{{ $supplier->id }}"
-                                data-type="{{ $supplier->default_type }}"
-                                data-diameter="{{ $supplier->default_diameter }}"
-                                data-size="{{ $supplier->default_size }}"
                                 {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
                                 {{ $supplier->name }}
                             </option>
@@ -45,24 +46,11 @@
                            placeholder="Optional notes">
                 </div>
             </div>
-
-            <div id="supplier-defaults" class="hidden mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-xs font-medium text-blue-700 mb-1">Supplier Default Rebar Specs</p>
-                <div class="flex gap-4 text-sm text-blue-800">
-                    <span>Type: <strong id="default-type">—</strong></span>
-                    <span>Diameter: <strong id="default-diameter">—</strong></span>
-                    <span>Size: <strong id="default-size">—</strong></span>
-                </div>
-            </div>
         </div>
 
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between mb-4">
+            <div class="mb-4">
                 <h3 class="text-sm font-semibold text-gray-700">Purchase Items</h3>
-                <button type="button" onclick="addRow()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    Add Product
-                </button>
             </div>
 
             <div id="select-banner" class="hidden mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -87,7 +75,7 @@
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select Product</option>
                     </select>
-                    <p class="mt-1 text-xs text-gray-400">Choosing a product opens a line where you can add one or more grade variants.</p>
+                    <p class="mt-1 text-xs text-gray-400">Choosing a product adds it as a line — the same product can be bought from any supplier.</p>
                 </div>
             </div>
 
@@ -120,16 +108,21 @@
                 </table>
             </div>
         </div>
+    </form>
 
-        <div class="flex items-center gap-3 mt-6">
-            <a href="{{ route('purchases.index') }}" class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
-                Cancel
-            </a>
-            <button type="submit" class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+    {{-- Side action bar: Cancel + Save sit to the right of the form on wide screens --}}
+    <div class="lg:w-56 flex-shrink-0">
+        <div class="lg:sticky lg:top-20 space-y-2">
+            <button type="submit" form="purchase-form" class="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
                 Save as Draft
             </button>
+            <a href="{{ route('purchases.index') }}" class="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                Cancel
+            </button>
         </div>
-    </form>
+    </div>
+    </div>
 </div>
 
 <script>
@@ -140,10 +133,14 @@ const rowIndex = {current: 0};
 // If the officer clicked "Create Purchase" on a pending notification, this
 // holds the pre-selected supplier + product so the form starts with a row
 // already filled in (only quantity remains editable).
+// Preselected product(s) from the "Purchase Requests" page. When the officer
+// checked several requests, each notified product becomes one pre-filled line
+// (only quantity and cost remain editable) and all share this one order.
 const preselected = @json($preselected ?? null);
+const preselectedItems = @json($preselectedItems ?? []);
 
-// Products are no longer tied to suppliers, so every active product is
-// available to add to the purchase no matter which supplier is chosen.
+// Any product can be bought from any supplier, so all active products are
+// always available no matter which supplier is chosen.
 function getSupplierProducts() {
     return allProducts;
 }
@@ -176,24 +173,13 @@ function filterProducts() {
 function onSupplierChange() {
     const supplierEl = document.getElementById('supplier_id');
 
-    // Update supplier defaults display
-    const opt = supplierEl.options[supplierEl.selectedIndex];
-    const defaultsEl = document.getElementById('supplier-defaults');
-    if (opt && opt.value) {
-        const type = opt.dataset.type || '—';
-        const diameter = opt.dataset.diameter || '—';
-        const size = opt.dataset.size || '—';
-        document.getElementById('default-type').textContent = type;
-        document.getElementById('default-diameter').textContent = diameter;
-        document.getElementById('default-size').textContent = size;
-        defaultsEl.classList.remove('hidden');
-    } else {
-        defaultsEl.classList.add('hidden');
-    }
-
     // Clear existing rows when supplier changes
     document.querySelectorAll('#items-body > tr').forEach(r => r.remove());
     selectedProducts.clear();
+
+    // Always re-add the pre-loaded notified products so the officer can still
+    // purchase them from whichever supplier they pick.
+    renderPreselected();
 
     // Category + product filters are always available (all products shown).
     const catFilter = document.getElementById('catFilter');
@@ -249,7 +235,9 @@ function addLineGroupWithPicker(groups) {
                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                     Add grade
                 </button>
-                <button type="button" onclick="removeLineGroup(${groupIdx})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                <button type="button" onclick="removeLineGroup(${groupIdx})" class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Remove">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
             <table class="w-full">
                 <tbody id="grades-${groupIdx}"></tbody>
@@ -286,7 +274,9 @@ function addLineGroup(group) {
                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                     Add grade
                 </button>
-                <button type="button" onclick="removeLineGroup(${groupIdx})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                <button type="button" onclick="removeLineGroup(${groupIdx})" class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Remove">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
             <table class="w-full">
                 <tbody id="grades-${groupIdx}"></tbody>
@@ -296,6 +286,46 @@ function addLineGroup(group) {
     tbody.appendChild(container);
     addGrade(groupIdx, group);
     document.getElementById('items-error').classList.add('hidden');
+    return groupIdx;
+}
+
+// Auto-fill a pre-loaded notified product just like a normally picked one:
+// add its line (grade row) and select the grade so type/diameter/size/cost
+// are copied into the row automatically.
+function addPreselectedProduct(prod) {
+    const catFilter = document.getElementById('catFilter');
+    if (prod.category_id) {
+        catFilter.value = String(prod.category_id);
+        filterProducts();
+    }
+    const productObj = {
+        id: prod.id, name: prod.name, code: prod.code, price: prod.price || 0,
+        category_id: prod.category_id, unit: prod.unit,
+        type: prod.type || '', diameter: prod.diameter || '', size: prod.size || '',
+    };
+    const gid = addLineGroup({ code: productObj.code, variants: [productObj] });
+    selectedProducts.add(String(prod.id));
+    const sel = document.querySelector(`#grades-${gid} select[name$="[product_id]"]`);
+    if (sel && sel.options.length > 0) {
+        sel.value = sel.options[0].value;
+        const m = (sel.name || '').match(/items\[(\d+)\]/);
+        if (m) fillDefaultsFromProduct(sel, parseInt(m[1], 10));
+    }
+    return gid;
+}
+
+// Re-draw every notified product as a pre-filled line. Called on page load and
+// again whenever the officer changes the supplier (so the rows never vanish).
+let preselectRendered = false;
+function renderPreselected() {
+    const firstRender = !preselectRendered;
+    preselectRendered = true;
+    preselectedItems.forEach(item => {
+        if (item.product) addPreselectedProduct(item.product);
+    });
+    if (firstRender && preselectedItems.length) {
+        document.getElementById('items-body').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 function addGrade(groupIdx, group) {
@@ -321,11 +351,11 @@ function addGrade(groupIdx, group) {
         </td>
         <td class="px-2 py-2 text-right text-xs text-gray-500 stock-cell" id="stock-${itemIdx}">—</td>
         <td class="px-2 py-2">
-            <input type="number" name="items[${itemIdx}][quantity]" min="1" value="1" required oninput="calcRow(${itemIdx})"
+            <input type="number" name="items[${itemIdx}][quantity]" min="1" value="" placeholder="0" required oninput="calcRow(${itemIdx})"
                    class="w-full px-2 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
         </td>
         <td class="px-2 py-2">
-            <input type="number" name="items[${itemIdx}][unit_cost]" min="0" step="0.01" value="" required oninput="calcRow(${itemIdx})"
+            <input type="number" name="items[${itemIdx}][unit_cost]" min="0" step="0.01" value="" placeholder="0" required oninput="calcRow(${itemIdx})"
                    class="w-full px-2 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
         </td>
         <td class="px-2 py-2">
@@ -429,26 +459,5 @@ document.getElementById('purchase-form').addEventListener('submit', function(e) 
 });
 
 onSupplierChange();
-
-// If a notification was opened, pre-add the notified product as a single
-// grade variant (its attributes are auto-filled from the product). The officer
-// selects any supplier, then adjusts only the quantity and cost.
-if (preselected && preselected.product) {
-    const prod = preselected.product;
-    const catFilter = document.getElementById('catFilter');
-    if (prod.category_id) {
-        catFilter.value = String(prod.category_id);
-        filterProducts();
-    }
-    const productObj = {
-        id: prod.id, name: prod.name, code: prod.code, price: prod.price || 0,
-        category_id: prod.category_id, unit: prod.unit,
-        type: prod.type || '', diameter: prod.diameter || '', size: prod.size || '',
-    };
-    addLineGroup({ code: productObj.code, variants: [productObj] });
-    selectedProducts.add(String(prod.id));
-    document.getElementById('items-body').scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
 </script>
 @endsection

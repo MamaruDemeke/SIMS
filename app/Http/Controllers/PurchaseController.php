@@ -22,10 +22,12 @@ use Illuminate\Support\Facades\DB;
  *
  * The workflow (statuses) is:
  *   draft     → Purchase Officer creates & edits
- *   pending   → Purchase Officer "submits"; waits for Inventory Manager
- *   received  → Inventory Manager "receives" the physical goods → generates Receipt # → goes to Finance
- *   approved  → Finance "approves" → ONLY NOW does stock actually increase
- *   rejected  → cancelled at any of the pending/received stages
+ *   pending   → Purchase Officer "submits"; waits for FINANCE approval
+ *   approved  → Finance "approves" (financial sign-off only — stock is NOT
+ *               changed at this step)
+ *   received  → Inventory Manager "receives" the physical goods → generates
+ *               Receipt # and ONLY NOW does stock actually increase
+ *   rejected  → cancelled at any of the pending/approved stages
  *
  * Access is split by role (see routes/web.php):
  *   Purchase Officer   → index, create, store, show, edit, update, destroy, submit
@@ -220,8 +222,9 @@ class PurchaseController extends Controller
 
         if (count($preselectedItems) > 1) {
             // Opened from "Create Purchase for Selected" → show ONE simple form
-            // with a fixed pre-filled row per notified product. Only the
-            // Supplier and the price are editable; everything else is read-only.
+            // with a pre-filled row per notified product. The Supplier, quantity
+            // (preset to the suggested shortfall) and unit price are all
+            // editable; the product itself is read-only.
             return view('purchases.create-selected', compact('suppliers', 'preselectedItems'));
         }
 

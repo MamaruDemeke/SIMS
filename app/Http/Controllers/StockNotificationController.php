@@ -29,7 +29,7 @@ class StockNotificationController extends Controller
             ->where('status', true)
             ->whereHas('inventory', function ($q) {
                 $q->whereColumn('quantity', '<', 'minimum_stock')
-                  ->where('quantity', '>', 0);
+                ->where('quantity', '>', 0);
             })
             ->get();
 

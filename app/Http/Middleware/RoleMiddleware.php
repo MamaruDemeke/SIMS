@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Middleware;
-
 // Imports.
 use Closure;
 use Illuminate\Http\Request;

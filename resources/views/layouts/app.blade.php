@@ -164,13 +164,6 @@
                                 Stock Alerts
                             </a>
                             @endif
-                            @if($perm('stock_receive'))
-                            <a href="{{ route('inventory.purchases.index') }}"
-                               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('inventory.purchases.*') ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ request()->routeIs('inventory.purchases.*') ? 'bg-white' : 'bg-gray-600' }}"></span>
-                                Approved - Awaiting Receive
-                            </a>
-                            @endif
                         </div>
                     </div>
                 </div>

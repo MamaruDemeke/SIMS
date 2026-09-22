@@ -52,7 +52,7 @@
 
     {{-- Action Buttons --}}
     @php $user = Auth::user(); @endphp
-    @if(in_array($purchase->status, ['draft', 'pending', 'received']))
+    @if(in_array($purchase->status, ['draft', 'pending', 'approved', 'received']))
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div class="flex items-center gap-2">
             <span class="text-sm font-medium text-gray-600">Actions:</span>

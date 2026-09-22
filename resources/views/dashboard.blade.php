@@ -101,6 +101,15 @@
             ->latest('approved_at')
             ->take(5)
             ->get();
+
+        // Approved purchases currently awaiting physical receipt. The Inventory
+        // Manager receives/rejects these directly from the dashboard.
+        if ($perm('stock_receive')) {
+            $approvedPurchasesList = App\Models\Purchase::with('supplier')
+                ->where('status', 'approved')
+                ->latest()
+                ->get();
+        }
     }
 
     // Single-feature counts.
@@ -175,7 +184,7 @@
 
     @if($canSeePurchases)
     {{-- Approved Awaiting Receive → link to purchases filtered to 'approved' --}}
-    <a href="{{ route('purchases.index', ['status' => 'approved']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <a href="{{ $perm('stock_receive') ? route('inventory.purchases.index') : route('purchases.index', ['status' => 'approved']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Approved - Awaiting Receive</p>
@@ -189,7 +198,7 @@
     </a>
 
     {{-- Received / Stock Updated → link to purchases filtered to 'received' --}}
-    <a href="{{ route('purchases.index', ['status' => 'received']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <a href="{{ $perm('stock_receive') ? route('inventory.purchases.index') : route('purchases.index', ['status' => 'received']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Received / Stock Updated</p>
@@ -201,6 +210,75 @@
         </div>
     </a>
     @endif
+</div>
+@endif
+
+{{-- ==== APPROVED – AWAITING RECEIVE ACTION TABLE (Inventory Manager) ====
+     Rendered only for roles with 'stock_receive' (Inventory Manager). Every
+     approved purchase is listed with its Receive / Reject buttons so stock can
+     be taken in straight from the dashboard (the sidebar entry was removed). --}}
+@if($showModuleCards && $perm('stock_receive'))
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+        <div>
+            <h3 class="text-sm font-semibold text-gray-800">Approved - Awaiting Receive</h3>
+            <p class="text-xs text-gray-500">Finance has approved these — receive the goods to update stock</p>
+        </div>
+        <a href="{{ route('inventory.purchases.index') }}" class="text-xs font-medium text-blue-600 hover:text-blue-700">View all</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reference</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Supplier</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Qty</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($approvedPurchasesList as $purchase)
+                    <tr class="{{ $loop->index % 2 === 1 ? 'bg-gray-50/50' : 'bg-white' }} hover:bg-blue-50/30 transition-colors border-b border-gray-100 last:border-0">
+                        <td class="px-4 py-3.5 whitespace-nowrap font-medium">
+                            <a href="{{ route('inventory.purchases.show', $purchase) }}" class="text-blue-600 hover:text-blue-700">{{ $purchase->reference_number }}</a>
+                        </td>
+                        <td class="px-4 py-3.5 text-gray-500">{{ $purchase->supplier->name ?? '—' }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $purchase->total_quantity ?? '—' }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">ETB {{ number_format($purchase->total_amount, 2) }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-500">{{ $purchase->created_at->format('M d, Y') }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                <form method="POST" action="{{ route('purchases.receive', $purchase) }}" class="inline" onsubmit="return confirm('Receive this purchase and update stock?')">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors" title="Mark as Received (Update Stock)">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                                        Receive
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ route('purchases.reject', $purchase) }}" class="inline" onsubmit="return confirm('Reject this purchase?')">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors" title="Reject">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center">
+                            <svg class="w-12 h-12 text-green-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <p class="text-sm font-medium text-gray-800">All caught up!</p>
+                            <p class="text-xs text-gray-500 mt-1">No purchases awaiting receive.</p>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 </div>
 @endif
 
@@ -262,8 +340,10 @@
 
 {{-- ==== RECENT APPROVED PURCHASES TABLE ====
      Only rendered if the role has the 'purchases' permission (Finance & Purchase Officer).
-     Lists the 5 most recently approved purchases, newest first (by approval time). --}}
-@if($showModuleCards && $canSeePurchases)
+     Lists the 5 most recently approved purchases, newest first (by approval time).
+     (The Inventory Manager has its own "Approved – Awaiting Receive" action table below
+     instead, since it uses different routes.) --}}
+@if($showModuleCards && $perm('purchases'))
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
     <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
         <div>

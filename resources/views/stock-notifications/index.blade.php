@@ -28,6 +28,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Code</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Current</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Min Required</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Suggested Qty</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Action</th>
                     </tr>
                 </thead>
@@ -39,7 +40,10 @@
                             <td class="px-4 py-3 text-right text-red-600 font-bold">0</td>
                             <td class="px-4 py-3 text-right text-gray-600">{{ $product->inventory->minimum_stock ?? 0 }} {{ $product->unit }}</td>
                             <td class="px-4 py-3 text-center">
-                                <form method="POST" action="{{ route('stock-notifications.notify') }}" class="inline">
+                                <input type="number" name="suggested_quantity" form="notify-form-{{ $product->id }}" min="1" value="" required placeholder="0" class="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded-lg">
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <form id="notify-form-{{ $product->id }}" method="POST" action="{{ route('stock-notifications.notify') }}" class="inline">
                                     @csrf
                                     <input type="hidden" name="product_id" value="{{ $product->id }}">
                                     <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
@@ -70,6 +74,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Code</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Current</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Min Required</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Suggested Qty</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Action</th>
                     </tr>
                 </thead>
@@ -81,7 +86,10 @@
                             <td class="px-4 py-3 text-right text-yellow-600 font-bold">{{ $product->inventory->quantity ?? 0 }}</td>
                             <td class="px-4 py-3 text-right text-gray-600">{{ $product->inventory->minimum_stock ?? 0 }} {{ $product->unit }}</td>
                             <td class="px-4 py-3 text-center">
-                                <form method="POST" action="{{ route('stock-notifications.notify') }}" class="inline">
+                                <input type="number" name="suggested_quantity" form="notify-form-{{ $product->id }}" min="1" value="" required placeholder="0" class="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded-lg">
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <form id="notify-form-{{ $product->id }}" method="POST" action="{{ route('stock-notifications.notify') }}" class="inline">
                                     @csrf
                                     <input type="hidden" name="product_id" value="{{ $product->id }}">
                                     <button type="submit" class="px-3 py-1.5 text-xs font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 transition-colors">

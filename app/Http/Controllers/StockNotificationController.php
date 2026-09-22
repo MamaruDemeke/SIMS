@@ -57,7 +57,8 @@ class StockNotificationController extends Controller
     public function notify(Request $request)
     {
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id'          => 'required|exists:products,id',
+            'suggested_quantity'  => 'nullable|integer|min:1',
         ]);
 
         // Load the product with its inventory record.
@@ -92,6 +93,7 @@ class StockNotificationController extends Controller
             'product_id' => $product->id,
             'current_quantity' => $inventory->quantity,
             'minimum_stock' => $inventory->minimum_stock,
+            'suggested_quantity' => $request->filled('suggested_quantity') ? (int) $request->suggested_quantity : null,
             'type' => $type,
             'message' => $message,
             'notified_by' => Auth::id(),
@@ -152,8 +154,14 @@ class StockNotificationController extends Controller
      * Unlike notify(), this works even when the product has no inventory record yet,
      * so a brand-new product can be flagged for purchase immediately.
      */
-    public function notifyPurchase(Product $product)
+    public function notifyPurchase(Request $request, Product $product)
     {
+        // Optional quantity the manager wants to buy — becomes the default qty
+        // on the purchase form.
+        $request->validate([
+            'suggested_quantity' => 'nullable|integer|min:1',
+        ]);
+
         // Prevent duplicates: refuse if this product already has an open alert.
         $existingPending = StockNotification::where('product_id', $product->id)
             ->where('fulfilled', false)
@@ -177,6 +185,7 @@ class StockNotificationController extends Controller
             'product_id' => $product->id,
             'current_quantity' => $quantity,
             'minimum_stock' => $minimum,
+            'suggested_quantity' => $request->filled('suggested_quantity') ? (int) $request->suggested_quantity : null,
             'type' => $type,
             'message' => $message,
             'notified_by' => Auth::id(),

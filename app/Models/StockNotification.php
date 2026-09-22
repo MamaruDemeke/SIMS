@@ -17,6 +17,7 @@ class StockNotification extends Model
         'product_id',        // which product needs restocking
         'current_quantity',  // stock level when the alert was created
         'minimum_stock',     // the minimum threshold that triggered it
+        'suggested_quantity',// how many the Inventory Manager suggests buying (optional)
         'type',              // 'out_of_stock' | 'low_stock'
         'message',           // human-readable alert text
         'fulfilled',         // true once a purchase has been approved to fix it

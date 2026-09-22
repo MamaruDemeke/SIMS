@@ -138,8 +138,9 @@
                         </td>
                         <td class="px-4 py-3.5 whitespace-nowrap text-right">
                             <div class="flex items-center justify-end gap-1">
-                                <form method="POST" action="{{ route('products.notifyPurchase', $product) }}" class="inline" onsubmit="return confirm('Notify the Purchase Officer to buy {{ addslashes($product->name) }}?')">
+                                <form method="POST" action="{{ route('products.notifyPurchase', $product) }}" class="inline" onsubmit="return askNotifyQty(this, '{{ addslashes($product->name) }}')">
                                     @csrf
+                                    <input type="hidden" name="suggested_quantity" value="">
                                     <button type="submit" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Notify Purchase Officer to Buy">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
                                     </button>
@@ -173,4 +174,18 @@
 </div>
 
 <x-pagination :paginator="$products" label="products" />
+
+<script>
+function askNotifyQty(form, productName) {
+    const qty = window.prompt('Enter quantity to buy for "' + productName + '":', '1');
+    if (qty === null) return false;
+    const n = parseInt(qty, 10);
+    if (isNaN(n) || n < 1) {
+        alert('Please enter a valid quantity (min 1).');
+        return false;
+    }
+    form.querySelector('input[name="suggested_quantity"]').value = n;
+    return confirm('Notify the Purchase Officer to buy ' + productName + ' (qty ' + n + ')?');
+}
+</script>
 @endsection

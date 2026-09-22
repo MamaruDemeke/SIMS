@@ -166,11 +166,13 @@ class PurchaseController extends Controller
             foreach ($notifs as $notification) {
                 if (!$notification->product) continue;
                 $product = $notification->product;
-                // Suggested order qty = the shortfall the inventory manager
-                // flagged (min stock minus what is currently in stock).
+                // Suggested order qty = what the inventory manager typed when
+                // notifying; fall back to the flagged shortfall (min stock −
+                // current stock) when no quantity was given.
                 $preselectedItems[] = [
                     'notification_id' => $notification->id,
-                    'suggested_qty' => max((int) $notification->minimum_stock - (int) $notification->current_quantity, 1),
+                    'suggested_qty' => $notification->suggested_quantity
+                        ?: max((int) $notification->minimum_stock - (int) $notification->current_quantity, 1),
                     'product' => [
                         'id' => $product->id,
                         'name' => $product->name,
@@ -193,6 +195,8 @@ class PurchaseController extends Controller
                 $product = $notification->product;
                 $preselected = [
                     'notification_id' => $notification->id,
+                    'suggested_qty' => $notification->suggested_quantity
+                        ?: max((int) $notification->minimum_stock - (int) $notification->current_quantity, 1),
                     'product' => [
                         'id' => $product->id,
                         'name' => $product->name,

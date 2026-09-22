@@ -52,7 +52,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="qty" class="block text-sm font-medium text-gray-700 mb-1">Quantity <span class="text-red-500">*</span></label>
-                        <input type="number" name="items[0][quantity]" id="qty" min="1" value="{{ old('items.0.quantity') }}" placeholder="0" required
+                        <input type="number" name="items[0][quantity]" id="qty" min="1" value="{{ old('items.0.quantity', $preselected['suggested_qty'] ?? '') }}" placeholder="0" required
                                class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('items.0.quantity') border-red-500 @enderror">
                         @error('items.0.quantity')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>

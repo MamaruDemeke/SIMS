@@ -152,6 +152,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:stock_alerts')->group(function () {
         Route::get('/stock-alerts', [StockNotificationController::class, 'index'])->name('stock-notifications.index');
         Route::post('/stock-alerts/notify', [StockNotificationController::class, 'notify'])->name('stock-notifications.notify');
+        Route::post('/stock-alerts/delete-selected', [StockNotificationController::class, 'destroySelected'])->name('stock-notifications.deleteSelected');
     });
 
     // ---- Stock Notifications — Purchase Officer (view open requests to buy) ----

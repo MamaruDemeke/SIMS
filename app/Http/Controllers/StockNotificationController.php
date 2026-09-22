@@ -133,6 +133,21 @@ class StockNotificationController extends Controller
     }
 
     /**
+     * Inventory Manager: delete selected sent notifications (bulk delete).
+     * Only notifications this manager sent can be deleted.
+     */
+    public function destroySelected(Request $request)
+    {
+        $ids = (array) $request->input('ids', []);
+
+        $count = StockNotification::where('notified_by', Auth::id())
+            ->whereIn('id', $ids)
+            ->delete();
+
+        return back()->with('success', $count . ' notification(s) deleted.');
+    }
+
+    /**
      * Inventory Manager: notify the Purchase Officer to buy a (possibly new) product.
      * Unlike notify(), this works even when the product has no inventory record yet,
      * so a brand-new product can be flagged for purchase immediately.

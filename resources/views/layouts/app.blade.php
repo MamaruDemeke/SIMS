@@ -292,8 +292,16 @@
             <header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
                 <div class="flex items-center justify-between h-14 px-4 lg:px-6">
 
+                    {{-- Left: hamburger button (only on small screens) — toggles the sidebar. --}}
+                    <button onclick="toggleSidebar()"
+                            class="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none" aria-label="Toggle menu">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
+                    </button>
+
                     {{-- Right: Notifications + User menu (ml-auto pushes it to the right) --}}
-                    <div class="flex items-center gap-10 ml-auto">
+                    <div class="flex items-center gap-4 sm:gap-10 ml-auto">
 
                         {{-- Notifications icon in the header — links to the notifications page,
                              with a red badge showing the number of unread alerts. --}}
@@ -410,6 +418,23 @@
                 overlay.classList.remove('active');
             }
         });
+
+        // Start with the sidebar hidden on small screens so it never covers the
+        // page content on phones/tablets; it opens via the hamburger button.
+        (function () {
+            if (window.innerWidth < 1024) {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.add('sidebar-collapsed');
+                sidebar.classList.remove('sidebar-expanded');
+
+                // Close the sidebar automatically after tapping a menu link.
+                document.querySelectorAll('#sidebar nav a, #sidebar nav button').forEach(el => {
+                    el.addEventListener('click', () => {
+                        if (window.innerWidth < 1024) toggleSidebar();
+                    });
+                });
+            }
+        })();
 
     </script>
 

@@ -7,3 +7,15 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Mobile-first polish: makes tables scroll smoothly, keeps the page from
+   overflowing horizontally, and stops iOS from zooming in on text inputs. */
+html { scroll-behavior: smooth; }
+
+body { overflow-x: hidden; }
+
+.overflow-x-auto, .overflow-x-scroll { -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 767px) {
+    input, select, textarea { font-size: 16px !important; }
+}

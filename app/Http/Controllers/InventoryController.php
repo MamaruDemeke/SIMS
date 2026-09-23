@@ -7,7 +7,6 @@ use App\Models\Inventory;
 use App\Models\Product;
 use App\Services\StockService; // a helper class for stock-related logic
 use Illuminate\Http\Request;
-
 /**
  * Handles the Inventory (current stock) pages.
  * Protected by the "role:inventory" middleware.

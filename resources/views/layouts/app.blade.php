@@ -25,6 +25,20 @@
         .sidebar-transition { transition: width 0.2s ease, transform 0.2s ease; }
         .sidebar-collapsed { width: 0 !important; transform: translateX(-100%); }
         .sidebar-expanded { width: 256px; }
+
+        /* Minimized (icon-only) sidebar on desktop */
+        .sidebar-minimized { width: 64px !important; }
+        .sidebar-minimized .sb-ghost { display: none !important; }
+        .sidebar-minimized .sb-sub { display: none !important; }
+        .sidebar-minimized nav > a > span,
+        .sidebar-minimized nav > div > button span,
+        .sidebar-minimized nav > div > button > svg { display: none !important; }
+        .sidebar-minimized nav > a,
+        .sidebar-minimized nav > div > button { justify-content: center; gap: 0; padding-left: 4px; padding-right: 4px; }
+        .sidebar-minimized .sb-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+        .sidebar-minimized .sb-foot { justify-content: center; padding-left: 0; padding-right: 0; }
+        .sidebar-minimized { overflow-x: hidden; }
+
         .sidebar-overlay { display: none; }
         @media (max-width: 1023px) {
             .sidebar-overlay.active { display: block; }
@@ -66,7 +80,7 @@
         <aside id="sidebar" class="sidebar-transition sidebar-expanded fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-gray-900 text-white flex flex-col lg:translate-x-0 overflow-hidden">
 
             {{-- Sidebar Header: the company logo/title block --}}
-            <div class="flex items-center gap-3 px-4 py-5 border-b border-gray-700/50">
+            <div class="sb-brand flex items-center gap-3 px-4 py-5 border-b border-gray-700/50">
                 {{-- Show the uploaded company logo if one exists, otherwise the default "YT" mark. --}}
                 @php $logo = company_logo(); @endphp
                 @if($logo)
@@ -78,7 +92,7 @@
                         <span class="text-white font-bold text-sm">YT</span>
                     </div>
                 @endif
-                <div class="min-w-0">
+                <div class="sb-ghost min-w-0">
                     <h1 class="text-sm font-bold text-white truncate">YEGNA TRADING PLC</h1>
                     <p class="text-[11px] text-gray-400 truncate">Inventory Management System</p>
                 </div>
@@ -120,7 +134,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                         </svg>
                     </button>
-                    <div x-show="open" x-collapse>
+                    <div x-show="open" x-collapse class="sb-sub">
                         <div class="ml-4 border-l border-gray-700 pl-3 py-1 space-y-0.5">
                             @if($perm('categories'))
                             <a href="{{ route('categories.index') }}"
@@ -236,7 +250,7 @@
 
                 @if($perm('users'))
                 {{-- ═══════ SYSTEM ═══════ --}}
-                <div class="pt-3 pb-1 px-3">
+                <div class="sb-ghost pt-3 pb-1 px-3">
                     <p class="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">System</p>
                 </div>
 
@@ -273,11 +287,11 @@
 
             {{-- Sidebar Footer: shows the logged-in user's name + role. --}}
             <div class="border-t border-gray-700/50 p-3">
-                <div class="flex items-center gap-3 px-2 py-2">
+                <div class="sb-foot flex items-center gap-3 px-2 py-2">
                     <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                         <span class="text-white text-xs font-semibold">{{ substr(Auth::user()->name, 0, 1) }}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
+                    <div class="sb-ghost min-w-0 flex-1">
                         <p class="text-sm font-medium text-white truncate">{{ Auth::user()->name }}</p>
                         <p class="text-[11px] text-gray-400 truncate">{{ Auth::user()->role?->name ?? 'No Role' }}</p>
                     </div>
@@ -292,13 +306,24 @@
             <header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
                 <div class="flex items-center justify-between h-14 px-4 lg:px-6">
 
-                    {{-- Left: hamburger button (only on small screens) — toggles the sidebar. --}}
-                    <button onclick="toggleSidebar()"
-                            class="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none" aria-label="Toggle menu">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                        </svg>
-                    </button>
+                    {{-- Left: hamburger (mobile) + sidebar collapse (desktop) --}}
+                    <div class="flex items-center gap-1">
+                        <button onclick="toggleSidebar()"
+                                class="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none" aria-label="Toggle menu">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                            </svg>
+                        </button>
+                        <button onclick="toggleSidebarDesktop()"
+                                class="hidden lg:inline-flex p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus:outline-none" aria-label="Collapse sidebar" title="Collapse sidebar">
+                            <svg id="sbCollapseIcon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                            </svg>
+                            <svg id="sbExpandIcon" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </button>
+                    </div>
 
                     {{-- Right: Notifications + User menu (ml-auto pushes it to the right) --}}
                     <div class="flex items-center gap-4 sm:gap-10 ml-auto">
@@ -408,6 +433,27 @@
                 overlay.classList.toggle('active');
             }
         }
+
+        // Desktop: collapse the sidebar to an icon-only rail (and restore it).
+        function toggleSidebarDesktop() {
+            const sidebar = document.getElementById('sidebar');
+            const minimized = sidebar.classList.toggle('sidebar-minimized');
+            document.getElementById('sbCollapseIcon').classList.toggle('hidden', minimized);
+            document.getElementById('sbExpandIcon').classList.toggle('hidden', !minimized);
+            try { localStorage.setItem('ys-sidebar-min', minimized ? '1' : '0'); } catch (e) {}
+        }
+
+        // Restore the saved desktop sidebar state on load.
+        (function () {
+            try {
+                if (window.innerWidth >= 1024 && localStorage.getItem('ys-sidebar-min') === '1') {
+                    const sidebar = document.getElementById('sidebar');
+                    sidebar.classList.add('sidebar-minimized');
+                    document.getElementById('sbCollapseIcon').classList.add('hidden');
+                    document.getElementById('sbExpandIcon').classList.remove('hidden');
+                }
+            } catch (e) {}
+        })();
 
         window.addEventListener('resize', function() {
             const sidebar = document.getElementById('sidebar');

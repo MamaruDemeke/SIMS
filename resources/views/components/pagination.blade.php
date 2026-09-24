@@ -15,8 +15,12 @@
     if ($last <= 1) {
         $elements = [];
     } elseif ($last <= 7) {
-        // Few pages: show every number.
-        $elements[] = range(1, $last);
+        // Few pages: show every number, keyed by page => its URL.
+        $links = [];
+        foreach (range(1, $last) as $page) {
+            $links[$page] = $paginator->url($page);
+        }
+        $elements[] = $links;
     } else {
         // Many pages: show current window plus first/last with "..." separators.
         $pageRange = range(max(1, $current - $window), min($last, $current + $window));

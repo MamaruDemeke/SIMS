@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\InventoryMovement;
+use App\Models\Purchase;
+use App\Models\Sale;
 use Illuminate\Http\Request;
 
 /**
@@ -18,7 +20,13 @@ class InventoryMovementController extends Controller
     public function index(Request $request)
     {
         // Query all movements, pre-loading the product and the user who made the move.
-        $query = InventoryMovement::with('product', 'creator');
+        // The linked document (reference) is loaded per type: purchases bring
+        // their supplier, sales bring their customer.
+        $query = InventoryMovement::with('product', 'creator')
+            ->with(['reference' => fn ($r) => $r->morphWith([
+                Purchase::class => ['supplier'],
+                Sale::class => ['customer'],
+            ])]);
 
         // Search by product name or code (filter on the related product).
         if ($request->filled('search')) {
@@ -44,8 +52,12 @@ class InventoryMovementController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Show newest movements first, 20 per page.
-        $movements = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+        // Show newest movements first; either all on one page (?all=1) or 6 per page.
+        $query->orderBy('created_at', 'desc');
+        $showAll = $request->boolean('all');
+        $movements = $showAll
+            ? $query->get()
+            : $query->paginate(6)->withQueryString();
 
         // Record that this user just viewed the movements page, so the sidebar
         // badge ("new movements") no longer counts them as new going forward.
@@ -53,5 +65,37 @@ class InventoryMovementController extends Controller
         $user->forceFill(['movements_viewed_at' => now()])->save();
 
         return view('inventory.movements', compact('movements'));
+    }
+
+    /**
+     * Admin-only: delete the selected inventory movements.
+     * Non-admin requests are rejected with a 403 before anything is deleted.
+     */
+    public function deleteSelected(Request $request)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $ids = $this->validatedIds($request);
+
+        if (empty($ids)) {
+            return back()->with('error', 'No movements selected.');
+        }
+
+        InventoryMovement::whereIn('id', $ids)->delete();
+
+        return redirect()->route('inventory.movements')
+            ->with('success', count($ids) . ' movement(s) deleted.');
+    }
+
+    /**
+     * Pulls a clean list of movement ids from the request (numbers only).
+     */
+    private function validatedIds(Request $request): array
+    {
+        return collect($request->input('movement_ids', []))
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 }

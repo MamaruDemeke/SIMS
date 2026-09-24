@@ -526,6 +526,8 @@ class PurchaseController extends Controller
                     'product_id' => $item->product_id,
                     'type' => 'purchase',
                     'quantity' => $item->quantity,
+                    'reference_type' => Purchase::class,
+                    'reference_id' => $purchase->id,
                     'note' => "Purchase {$purchase->reference_number} (Receipt: {$purchase->receipt_number}) received. Stock updated.",
                     'created_by' => Auth::id(),
                 ]);

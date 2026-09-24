@@ -92,4 +92,25 @@ class InventoryMovement extends Model
             default => 'default',
         };
     }
+
+    /**
+     * Accessor ($movement->party_name).
+     * Who the movement was from/to: for a purchase → the supplier,
+     * for a sale → the customer. Falls back to null when not applicable.
+     */
+    public function getPartyNameAttribute(): ?string
+    {
+        $ref = $this->reference;
+        if (!$ref) return null;
+
+        if ($this->type === 'purchase' && method_exists($ref, 'supplier')) {
+            return $ref->supplier?->name;
+        }
+
+        if ($this->type === 'sale' && method_exists($ref, 'customer')) {
+            return $ref->customer?->name;
+        }
+
+        return null;
+    }
 }

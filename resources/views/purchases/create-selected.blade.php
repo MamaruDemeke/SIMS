@@ -110,6 +110,19 @@
                     </tbody>
                     <tfoot>
                         <tr class="bg-gray-50 border-t border-gray-200">
+                            <td colspan="7" class="px-3 py-3">
+                                <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-2">
+                                    <a href="{{ route('stock-notifications.pending') }}" class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        Cancel
+                                    </a>
+                                    <button type="submit" form="purchase-form" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                                        Save as Draft
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="bg-gray-50 border-t border-gray-200">
                             <td colspan="6" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
                             <td class="px-3 py-3 text-right text-sm font-bold text-gray-900" id="grand-total">ETB 0.00</td>
                         </tr>
@@ -118,18 +131,6 @@
             </div>
         </div>
     </form>
-
-    <div class="lg:w-56 flex-shrink-0">
-        <div class="lg:sticky lg:top-20 space-y-2">
-            <button type="submit" form="purchase-form" class="w-full px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                Save as Draft
-            </button>
-            <a href="{{ route('stock-notifications.pending') }}" class="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                Cancel
-            </a>
-        </div>
-    </div>
     </div>
 </div>
 

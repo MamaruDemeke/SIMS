@@ -94,12 +94,23 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:inventory')->group(function () {
         Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::get('/inventory/{inventory}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
+        // Legacy/direct link to /inventory/{id} (e.g. an old bookmark) — send
+        // the user to the proper edit page instead of a 405/404 error.
+        // Numbers only, so it never shadows /inventory/movements or /inventory/purchases.
+        Route::get('/inventory/{inventory}', function (string $inventory) {
+            if (\App\Models\Inventory::find($inventory)) {
+                return redirect()->route('inventory.edit', (int) $inventory);
+            }
+            return redirect()->route('inventory.index');
+        })->whereNumber('inventory')->name('inventory.slug');
         Route::put('/inventory/{inventory}', [InventoryController::class, 'update'])->name('inventory.update');
     });
 
     // Inventory movements (history/ledger) — read only.
     Route::middleware('role:inventory_movements')->group(function () {
         Route::get('/inventory/movements', [InventoryMovementController::class, 'index'])->name('inventory.movements');
+        // Admin-only bulk delete of selected movements.
+        Route::post('/inventory/movements/delete-selected', [InventoryMovementController::class, 'deleteSelected'])->name('inventory.movements.deleteSelected');
     });
 
     // ---- Suppliers (role must have 'suppliers' permission) ----

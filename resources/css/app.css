@@ -30,7 +30,28 @@
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
+        /* Soft scenic wash: brand colour breathing in from the corners so
+           pages feel warmer and less flat than a plain grey backdrop. */
+        background-image:
+            radial-gradient(70rem 55rem at 115% -15%, rgb(59 130 246 / 0.08), transparent 60%),
+            radial-gradient(55rem 45rem at -15% 5%, rgb(16 185 129 / 0.07), transparent 60%),
+            radial-gradient(45rem 40rem at 50% 110%, rgb(139 92 246 / 0.06), transparent 60%);
+        background-attachment: fixed;
     }
+
+    /* Same ambient wash, tuned for the dark theme */
+    body.theme-dark {
+        background-image:
+            radial-gradient(70rem 55rem at 115% -15%, rgb(59 130 246 / 0.16), transparent 60%),
+            radial-gradient(55rem 45rem at -15% 5%, rgb(16 185 129 / 0.13), transparent 60%),
+            radial-gradient(45rem 40rem at 50% 110%, rgb(139 92 246 / 0.11), transparent 60%);
+    }
+
+    /* Headings read a touch more refined with tighter tracking */
+    h1, h2, h3, h4 { letter-spacing: -0.01em; }
+
+    /* Link colour changes glide instead of snapping */
+    a { transition: color 0.15s ease; }
 
     /* Brand-tinted text selection */
     ::selection { background: rgb(37 99 235 / 0.16); }
@@ -86,37 +107,38 @@
        slightly larger radius for a softer, more modern look. */
     [class~="bg-white"][class~="shadow-sm"][class~="rounded-lg"][class~="border-gray-200"] {
         border-radius: 0.75rem;
+        transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
     }
 
     /* Tactile primary action buttons — soft gradient + depth */
     a.bg-blue-600, button.bg-blue-600 {
         background-image: linear-gradient(180deg, #3d82f7 0%, #2563eb 100%);
-        box-shadow: 0 1px 2px rgb(37 99 235 / 0.35);
+        box-shadow: 0 1px 2px rgb(37 99 235 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.18);
     }
     a.bg-blue-600:hover, a.bg-blue-600:focus-visible,
     button.bg-blue-600:hover, button.bg-blue-600:focus-visible {
         background-image: linear-gradient(180deg, #2563eb 0%, #1e4fd6 100%);
-        box-shadow: 0 2px 6px rgb(37 99 235 / 0.4);
+        box-shadow: 0 2px 6px rgb(37 99 235 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.18);
     }
 
     a.bg-green-600, button.bg-green-600 {
         background-image: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
-        box-shadow: 0 1px 2px rgb(22 163 74 / 0.35);
+        box-shadow: 0 1px 2px rgb(22 163 74 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.18);
     }
     a.bg-green-600:hover, a.bg-green-600:focus-visible,
     button.bg-green-600:hover, button.bg-green-600:focus-visible {
         background-image: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
-        box-shadow: 0 2px 6px rgb(22 163 74 / 0.4);
+        box-shadow: 0 2px 6px rgb(22 163 74 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.18);
     }
 
     a.bg-red-600, button.bg-red-600 {
         background-image: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-        box-shadow: 0 1px 2px rgb(220 38 38 / 0.35);
+        box-shadow: 0 1px 2px rgb(220 38 38 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.18);
     }
     a.bg-red-600:hover, a.bg-red-600:focus-visible,
     button.bg-red-600:hover, button.bg-red-600:focus-visible {
         background-image: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
-        box-shadow: 0 2px 6px rgb(220 38 38 / 0.4);
+        box-shadow: 0 2px 6px rgb(220 38 38 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.18);
     }
 
     /* Tiny "pressed" feedback on click for a friendlier feel */
@@ -144,6 +166,21 @@
     body.theme-dark tbody tr:nth-child(even) { background-color: rgba(17, 24, 39, 0.5); }
     body.theme-dark thead[class~="bg-gray-50"] { background-image: none; }
     body.theme-dark tbody tr:hover { background-color: rgba(30, 58, 138, 0.35); }
+
+    /* ═══ Form fields — settled transitions + a soft, trustworthy focus glow ═══ */
+    input[type="text"], input[type="email"], input[type="password"],
+    input[type="number"], input[type="date"], input[type="tel"], input[type="search"],
+    select, textarea {
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus,
+    input[type="number"]:focus, input[type="date"]:focus, input[type="tel"]:focus, input[type="search"]:focus,
+    select:focus, textarea:focus {
+        box-shadow: 0 0 0 3px rgb(59 130 246 / 0.16);
+    }
+    body.theme-dark input:focus, body.theme-dark select:focus, body.theme-dark textarea:focus {
+        box-shadow: 0 0 0 3px rgb(96 165 250 / 0.22);
+    }
 }
 
 /* Mobile-first polish: makes tables scroll smoothly, keeps the page from

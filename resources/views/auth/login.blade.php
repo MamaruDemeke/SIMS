@@ -19,11 +19,17 @@
         <div class="fixed inset-0 bg-black/30"></div>
     @endif
     <div class="w-full max-w-md relative">
-        <div class="bg-white rounded-lg shadow-2xl p-8">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 relative overflow-hidden">
+            {{-- Top accent gradient strip --}}
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400"></div>
             {{-- Login card header --}}
             <div class="text-center mb-8">
                 @if($logo)
                     <img src="{{ $logo }}" alt="Company Logo" class="mx-auto h-14 object-contain mb-3">
+                @else
+                    <div class="mx-auto mb-4 w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30">
+                        <span class="text-white font-bold text-lg">YT</span>
+                    </div>
                 @endif
                 <h1 class="text-2xl font-bold text-gray-800">YEGNA TRADING PLC</h1>
                 <p class="text-sm text-gray-500 mt-1">Inventory Management System</p>
@@ -52,7 +58,7 @@
                         placeholder="you@yegnatrading.com"
                         {{-- Tailwind classes. The @error('email') ... @error block turns the
                              border red if there is an "email" validation error. --}}
-                        class="w-full px-3 py-2 border @error('email') border-red-500 @else border-gray-300 @enderror rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        class="w-full px-3.5 py-2.5 border @error('email') border-red-400 @else border-gray-200 @enderror rounded-lg bg-gray-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors"
                     >
                     {{-- Show the error message under the field if one exists. --}}
                     @error('email')
@@ -70,7 +76,7 @@
                             id="password"
                             name="password"
                             required
-                            class="w-full px-3 py-2 pr-10 border @error('password') border-red-500 @else border-gray-300 @enderror rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full px-3.5 py-2.5 pr-10 border @error('password') border-red-400 @else border-gray-200 @enderror rounded-lg bg-gray-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors"
                         >
                         {{-- Toggle eye button. onclick calls togglePassword() at the bottom.
                              tabindex="-1" keeps it out of the keyboard tab order since it's cosmetic. --}}
@@ -106,7 +112,7 @@
                 <button
                     type="submit"
                     id="login-btn"
-                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out"
+                    class="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150 ease-in-out shadow-md"
                 >
                     Login
                 </button>

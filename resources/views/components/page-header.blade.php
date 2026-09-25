@@ -9,7 +9,7 @@
 <div class="mb-6">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">{{ $title }}</h1>
+            <h1 class="text-2xl font-bold text-gray-900 after:block after:h-1 after:w-10 after:mt-1.5 after:rounded-full after:bg-gradient-to-r after:from-blue-600 after:to-blue-400">{{ $title }}</h1>
             @if(!empty($breadcrumbs))
                 <nav class="mt-1.5 flex items-center gap-1.5 text-sm text-gray-500">
                     @foreach($breadcrumbs as $index => $crumb)
@@ -29,7 +29,7 @@
         </div>
 
         @if($actionLabel && $actionHref)
-            <a href="{{ $actionHref }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+            <a href="{{ $actionHref }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:-translate-y-0.5 hover:shadow-md">
                 @if($actionIcon === 'plus')
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

@@ -389,20 +389,26 @@
                 {{-- Green "success" banner — shown when a controller did a successful action
                      and flashed a message via ->with('success', ...). --}}
                 @if(session('success'))
-                    <div class="mb-4 flex items-center gap-3 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+                    <div class="ys-alert mb-4 flex items-center gap-3 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl shadow-sm">
                         <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span class="text-sm">{{ session('success') }}</span>
+                        <span class="text-sm flex-1">{{ session('success') }}</span>
+                        <button type="button" onclick="this.parentElement.style.display='none'" class="flex-shrink-0 p-1 rounded-md text-green-600 hover:text-green-800 hover:bg-green-100 transition-colors" aria-label="Dismiss">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                     </div>
                 @endif
 
                 @if(session('error'))
-                    <div class="mb-4 flex items-center gap-3 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                    <div class="ys-alert mb-4 flex items-center gap-3 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl shadow-sm">
                         <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                         </svg>
-                        <span class="text-sm">{{ session('error') }}</span>
+                        <span class="text-sm flex-1">{{ session('error') }}</span>
+                        <button type="button" onclick="this.parentElement.style.display='none'" class="flex-shrink-0 p-1 rounded-md text-red-600 hover:text-red-800 hover:bg-red-100 transition-colors" aria-label="Dismiss">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
                     </div>
                 @endif
 

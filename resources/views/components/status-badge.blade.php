@@ -14,6 +14,7 @@
     };
 @endphp
 
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $classes }}">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border shadow-sm {{ $classes }}">
+    <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span>
     {{ $label }}
 </span>

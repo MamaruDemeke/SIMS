@@ -86,7 +86,7 @@
                     @if(is_array($element))
                         @foreach($element as $page => $url)
                             @if($page == $paginator->currentPage())
-                                <span class="inline-flex items-center justify-center w-8 h-8 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg">{{ $page }}</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg shadow-md">{{ $page }}</span>
                             @else
                                 <a href="{{ $url }}"
                                    class="inline-flex items-center justify-center w-8 h-8 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">{{ $page }}</a>

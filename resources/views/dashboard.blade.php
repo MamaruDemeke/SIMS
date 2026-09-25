@@ -149,13 +149,13 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @if($canSeeProducts)
     {{-- Card 1: Total Products (only if role has 'products' permission) --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 transition-shadow hover:shadow-md">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Total Products</p>
                 <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalProducts }}</p>
             </div>
-            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-50 rounded-lg flex items-center justify-center shadow-sm">
                 <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                 </svg>
@@ -167,13 +167,13 @@
     @if($canSeeInventory)
     {{-- Card: Low Stock Alerts (only if role can see stock/inventory info).
          The number turns red if there are any low/out-of-stock items. --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 transition-shadow hover:shadow-md">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Low Stock Alerts</p>
                 <p class="text-2xl font-bold {{ ($lowStockItems->count() + $outOfStockItems->count()) > 0 ? 'text-red-600' : 'text-gray-800' }} mt-1">{{ $lowStockItems->count() + $outOfStockItems->count() }}</p>
             </div>
-            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-red-100 to-rose-50 rounded-lg flex items-center justify-center shadow-sm">
                 <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
@@ -184,27 +184,27 @@
 
     @if($canSeePurchases)
     {{-- Approved Awaiting Receive → link to purchases filtered to 'approved' --}}
-    <a href="{{ $perm('stock_receive') ? route('inventory.purchases.index') : route('purchases.index', ['status' => 'approved']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <a href="{{ $perm('stock_receive') ? route('inventory.purchases.index') : route('purchases.index', ['status' => 'approved']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Approved - Awaiting Receive</p>
                 {{-- The number turns blue if any purchases are waiting for Inventory. --}}
                 <p class="text-2xl font-bold {{ $approvedPurchases > 0 ? 'text-blue-600' : 'text-gray-800' }} mt-1">{{ $approvedPurchases }}</p>
             </div>
-            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-50 rounded-lg flex items-center justify-center shadow-sm">
                 <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
     </a>
 
     {{-- Received / Stock Updated → link to purchases filtered to 'received' --}}
-    <a href="{{ $perm('stock_receive') ? route('inventory.purchases.index') : route('purchases.index', ['status' => 'received']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+    <a href="{{ $perm('stock_receive') ? route('inventory.purchases.index') : route('purchases.index', ['status' => 'received']) }}" class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Received / Stock Updated</p>
                 <p class="text-2xl font-bold {{ $receivedPurchases > 0 ? 'text-green-600' : 'text-gray-800' }} mt-1">{{ $receivedPurchases }}</p>
             </div>
-            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-50 rounded-lg flex items-center justify-center shadow-sm">
                 <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
@@ -447,39 +447,39 @@
 @if($canSeeUsers)
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     {{-- Card 1: Total Users (every account) --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 transition-shadow hover:shadow-md">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Total Users</p>
                 <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalUsers }}</p>
             </div>
-            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-50 rounded-lg flex items-center justify-center shadow-sm">
                 <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
             </div>
         </div>
     </div>
 
     {{-- Card 2: Active Users (can log in) --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 transition-shadow hover:shadow-md">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Active Users</p>
                 <p class="text-2xl font-bold text-green-600 mt-1">{{ $activeUsers }}</p>
             </div>
-            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-50 rounded-lg flex items-center justify-center shadow-sm">
                 <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
         </div>
     </div>
 
     {{-- Card 3: Deactivated Users (blocked from logging in) --}}
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 transition-shadow hover:shadow-md">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm text-gray-500">Deactivated Users</p>
                 <p class="text-2xl font-bold {{ $deactivatedUsers > 0 ? 'text-red-600' : 'text-gray-800' }} mt-1">{{ $deactivatedUsers }}</p>
             </div>
-            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-red-100 to-rose-50 rounded-lg flex items-center justify-center shadow-sm">
                 <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
             </div>
         </div>

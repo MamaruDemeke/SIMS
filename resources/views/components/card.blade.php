@@ -5,7 +5,7 @@
 
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
     @if($title)
-        <div class="px-5 py-4 border-b border-gray-200">
+        <div class="px-5 py-4 border-b border-gray-200 bg-gradient-to-b from-gray-50 to-white">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-base font-semibold text-gray-800">{{ $title }}</h3>

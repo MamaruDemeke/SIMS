@@ -137,16 +137,14 @@
         const groupIdx = ++rowIndex.current;
         const container = document.createElement('tr');
         container.id = 'grp-' + groupIdx;
-        container.className = 'align-top';
+        container.dataset.group = groupIdx;
+        container.className = 'bg-gray-50/60';
         const pickOptions = groups.map(g =>
             `<option value="${g.code}">${g.code} — ${g.variants[0].name}</option>`
         ).join('');
         container.innerHTML = `
-            <td class="px-3 py-2 align-top pt-3">
-                <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
-            </td>
-            <td colspan="8" class="px-3 py-2">
-                <div class="mb-2 flex items-center gap-2">
+            <td colspan="9" class="px-3 py-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <select onchange="setLineGroup(${groupIdx}, this.value)" class="px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select product (type/code)</option>
                         ${pickOptions}
@@ -157,9 +155,6 @@
                     </button>
                     <button type="button" onclick="removeLineGroup(${groupIdx})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
                 </div>
-                <table class="w-full">
-                    <tbody id="grades-${groupIdx}"></tbody>
-                </table>
             </td>
         `;
         container._pickGroups = Object.fromEntries(groups.map(g => [g.code, g]));
@@ -172,43 +167,24 @@
         const container = document.getElementById('grp-' + groupIdx);
         if (!container || !code) return;
         container._group = container._pickGroups[code];
-        document.getElementById('grades-' + groupIdx).innerHTML = '';
+        groupGradeRows(groupIdx).forEach(r => r.remove());
+        renumberGroups();
     }
 
-    // -- Step 2: a "line group" holds several grade-variant rows of one product --
-    function addLineGroup(group) {
-        const tbody = document.getElementById('items-body');
-        const groupIdx = ++rowIndex.current;
-        const container = document.createElement('tr');
-        container.id = 'grp-' + groupIdx;
-        container.className = 'align-top';
-        container.innerHTML = `
-            <td class="px-3 py-2 align-top pt-3">
-                <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
-            </td>
-            <td colspan="8" class="px-3 py-2">
-                <div class="mb-2 flex items-center gap-2">
-                    <span class="text-sm font-semibold text-gray-800">${group.code}</span>
-                    <button type="button" onclick="addGrade(${groupIdx})" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
-                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                        Add grade
-                    </button>
-                    <button type="button" onclick="removeLineGroup(${groupIdx})" class="text-xs text-red-500 hover:text-red-700">Remove</button>
-                </div>
-                <table class="w-full">
-                    <tbody id="grades-${groupIdx}"></tbody>
-                </table>
-            </td>
-        `;
-        tbody.appendChild(container);
-        addGrade(groupIdx, group);
-        document.getElementById('items-error').classList.add('hidden');
-        renumberGroups();
+    // Grade rows that belong to one product group (they follow its header row).
+    function groupGradeRows(groupIdx) {
+        return [...document.querySelectorAll(`#items-body tr[id^="grade-"][data-group="${groupIdx}"]`)];
+    }
+
+    function insertGradeRow(groupIdx, row) {
+        const header = document.getElementById('grp-' + groupIdx);
+        const grades = groupGradeRows(groupIdx);
+        const ref = grades.length ? grades[grades.length - 1] : header;
+        if (ref) ref.after(row);
     }
 
     function addGrade(groupIdx, group) {
         // group is only passed on first call; otherwise read from the stored variant list.
-        const tbody = document.getElementById('grades-' + groupIdx);
         const container = document.getElementById('grp-' + groupIdx);
         const stored = container._group || group;
         container._group = stored;
@@ -220,15 +196,19 @@
 
         const row = document.createElement('tr');
         row.id = 'grade-' + itemIdx;
-        row.className = 'border-t border-gray-100';
+        row.dataset.group = groupIdx;
+        row.className = 'border-t border-gray-100 align-top';
         row.innerHTML = `
+            <td class="px-2 py-2">
+                <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${itemIdx}</span>
+            </td>
             <td class="px-2 py-2">
                 <select name="items[${itemIdx}][product_id]" required class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="fillDefaults(this, ${itemIdx})">
                     <option value="">Select grade</option>
                     ${options}
                 </select>
             </td>
-            <td class="px-2 py-2 text-right text-xs text-gray-500 stock-cell" id="stock-${itemIdx}">—</td>
+            <td class="px-2 py-2 text-left text-xs text-gray-500 stock-cell" id="stock-${itemIdx}">—</td>
             <td class="px-2 py-2">
                 <input type="number" name="items[${itemIdx}][quantity]" min="1" value="1" required oninput="calcRow(${itemIdx})"
                        class="w-full px-2 py-1.5 text-sm border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
@@ -252,8 +232,9 @@
                 </button>
             </td>
         `;
-        tbody.appendChild(row);
+        insertGradeRow(groupIdx, row);
         calcGrandTotal();
+        renumberGroups();
     }
 
     function fillDefaults(select, idx) {
@@ -273,12 +254,15 @@
 
     function removeGrade(idx) {
         const row = document.getElementById('grade-' + idx);
-        if (row) { row.remove(); calcGrandTotal(); }
+        if (row) { row.remove(); renumberGroups(); calcGrandTotal(); }
     }
 
     function removeLineGroup(gid) {
+        groupGradeRows(gid).forEach(r => r.remove());
         const cont = document.getElementById('grp-' + gid);
-        if (cont) { cont.remove(); renumberGroups(); calcGrandTotal(); }
+        if (cont) cont.remove();
+        renumberGroups();
+        calcGrandTotal();
     }
 
     function calcRow(idx) {
@@ -347,8 +331,8 @@
     });
 
     function renumberGroups() {
-        document.querySelectorAll('#items-body > tr[id^="grp-"]').forEach((tr, i) => {
-            const badge = tr.querySelector('td:first-child span');
+        document.querySelectorAll('#items-body tr[id^="grade-"]').forEach((row, i) => {
+            const badge = row.querySelector('td:first-child span');
             if (badge) badge.textContent = i + 1;
         });
     }

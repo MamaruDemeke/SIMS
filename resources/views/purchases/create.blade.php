@@ -91,8 +91,7 @@
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-16">Qty</th>
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Unit Cost (ETB)</th>
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Grade</th>
-                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-20">Diameter</th>
-                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-16">Size</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-32">Brand</th>
                             <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase w-24">Total</th>
                             <th class="px-3 py-2 w-10"></th>
                         </tr>
@@ -101,7 +100,7 @@
                     </tbody>
                     <tfoot id="items-foot">
                         <tr class="bg-gray-50 border-t border-gray-200">
-                            <td colspan="10" class="px-3 py-3">
+                            <td colspan="8" class="px-3 py-3">
                                 <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-2">
                                     <a href="{{ route('purchases.index') }}" class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -114,7 +113,7 @@
                             </td>
                         </tr>
                         <tr class="bg-gray-50 border-t border-gray-200">
-                            <td colspan="9" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
+                            <td colspan="8" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
                             <td class="px-3 py-3 text-right text-sm font-bold text-gray-900" id="grand-total">ETB 0.00</td>
                         </tr>
                     </tfoot>
@@ -225,7 +224,7 @@ function addLineGroupWithPicker(groups) {
         <td class="px-3 py-2 align-top pt-3">
             <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
         </td>
-        <td colspan="9" class="px-3 py-2">
+        <td colspan="8" class="px-3 py-2">
             <div class="mb-2 flex items-center gap-2">
                 <select onchange="setLineGroup(${groupIdx}, this.value)" class="px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Select product (type/code)</option>
@@ -267,7 +266,7 @@ function addLineGroup(group) {
         <td class="px-3 py-2 align-top pt-3">
             <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
         </td>
-        <td colspan="9" class="px-3 py-2">
+        <td colspan="8" class="px-3 py-2">
             <div class="mb-2 flex items-center gap-2">
                 <span class="text-sm font-semibold text-gray-800">${group.code}</span>
                 <button type="button" onclick="addGrade(${groupIdx})" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
@@ -290,7 +289,7 @@ function addLineGroup(group) {
 }
 
 // Auto-fill a pre-loaded notified product just like a normally picked one:
-// add its line (grade row) and select the grade so type/diameter/size/cost
+// add its line (grade row) and select the grade so grade/brand/cost
 // are copied into the row automatically.
 function addPreselectedProduct(prod) {
     const catFilter = document.getElementById('catFilter');
@@ -301,7 +300,7 @@ function addPreselectedProduct(prod) {
     const productObj = {
         id: prod.id, name: prod.name, code: prod.code, price: prod.price || 0,
         category_id: prod.category_id, unit: prod.unit,
-        type: prod.type || '', diameter: prod.diameter || '', size: prod.size || '',
+        type: prod.type || '', brand: prod.brand || '',
     };
     const gid = addLineGroup({ code: productObj.code, variants: [productObj] });
     selectedProducts.add(String(prod.id));
@@ -336,7 +335,7 @@ function addGrade(groupIdx, group) {
 
     const itemIdx = ++rowIndex.current;
     const options = stored.variants.map(v =>
-        `<option value="${v.id}" data-price="${v.price||0}" data-type="${v.type||''}" data-diameter="${v.diameter||''}" data-size="${v.size||''}">${v.name}${v.type?' — G '+v.type:''}</option>`
+        `<option value="${v.id}" data-price="${v.price||0}" data-type="${v.type||''}" data-brand="${v.brand||''}">${v.name}${v.type?' — G '+v.type:''}</option>`
     ).join('');
 
     const row = document.createElement('tr');
@@ -363,11 +362,7 @@ function addGrade(groupIdx, group) {
                    class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
         </td>
         <td class="px-2 py-2">
-            <input type="text" name="items[${itemIdx}][diameter]" readonly tabindex="-1"
-                   class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
-        </td>
-        <td class="px-2 py-2">
-            <input type="text" name="items[${itemIdx}][size]" readonly tabindex="-1"
+            <input type="text" name="items[${itemIdx}][brand]" readonly tabindex="-1"
                    class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
         </td>
         <td class="px-2 py-2 text-right text-sm text-gray-600" id="total-${itemIdx}">ETB 0.00</td>
@@ -387,13 +382,11 @@ function fillDefaultsFromProduct(el, idx) {
     const row = document.getElementById('grade-' + idx);
     const priceInput = row.querySelector(`input[name="items[${idx}][unit_cost]"]`);
     const typeInput = row.querySelector(`input[name="items[${idx}][type]"]`);
-    const diamInput = row.querySelector(`input[name="items[${idx}][diameter]"]`);
-    const sizeInput = row.querySelector(`input[name="items[${idx}][size]"]`);
+    const brandInput = row.querySelector(`input[name="items[${idx}][brand]"]`);
     const stock = row.querySelector(`#stock-${idx}`);
     if (priceInput) priceInput.value = opt.dataset.price || 0;
     if (typeInput) typeInput.value = opt.dataset.type || '';
-    if (diamInput) diamInput.value = opt.dataset.diameter || '';
-    if (sizeInput) sizeInput.value = opt.dataset.size || '';
+    if (brandInput) brandInput.value = opt.dataset.brand || '';
     if (stock) stock.textContent = opt.dataset.stock ?? '—';
     calcRow(idx);
 }

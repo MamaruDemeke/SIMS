@@ -190,8 +190,6 @@
                         <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
                         <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Product</th>
                         <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
-                        <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Diameter</th>
-                        <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Size</th>
                         <th class="px-4 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase">Qty</th>
                         <th class="px-4 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase">Unit Cost</th>
                         <th class="px-4 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
@@ -203,8 +201,6 @@
                             <td class="px-4 py-3 text-gray-500">{{ $loop->index + 1 }}</td>
                             <td class="px-4 py-3 font-medium text-gray-800">{{ $item->product->name ?? '—' }}</td>
                             <td class="px-4 py-3 text-gray-500">{{ $item->type ?? '—' }}</td>
-                            <td class="px-4 py-3 text-gray-500">{{ $item->diameter ?? '—' }}</td>
-                            <td class="px-4 py-3 text-gray-500">{{ $item->size ?? '—' }}</td>
                             <td class="px-4 py-3 text-right text-gray-500">{{ $item->quantity }}</td>
                             <td class="px-4 py-3 text-right text-gray-500">ETB {{ number_format($item->unit_cost, 2) }}</td>
                             <td class="px-4 py-3 text-right font-medium text-gray-800">ETB {{ number_format($item->line_total, 2) }}</td>
@@ -213,7 +209,7 @@
                 </tbody>
                 <tfoot class="bg-gray-50 border-t border-gray-200">
                     <tr>
-                        <td colspan="7" class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
+                        <td colspan="5" class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
                         <td class="px-4 py-3 text-right text-sm font-bold text-gray-900">ETB {{ number_format($purchase->total_amount, 2) }}</td>
                     </tr>
                 </tfoot>

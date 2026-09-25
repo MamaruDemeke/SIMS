@@ -17,8 +17,6 @@ class PurchaseItem extends Model
         'quantity',    // how many units
         'unit_cost',   // cost per single unit
         'type',        // optional product type
-        'diameter',    // optional rebar diameter
-        'size',        // optional size
     ];
 
     // Defines how columns are typed when read from the DB.

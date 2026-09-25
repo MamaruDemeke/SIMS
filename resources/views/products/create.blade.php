@@ -82,21 +82,11 @@
                 </div>
 
                 <div>
-                    <label for="diameter" class="block text-sm font-medium text-gray-700 mb-1">Diameter</label>
-                    <input type="text" name="diameter" id="diameter" value="{{ old('diameter') }}"
-                           class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('diameter') border-red-500 @enderror"
-                           placeholder="8 - 32 mm">
-                    @error('diameter')
-                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="length" class="block text-sm font-medium text-gray-700 mb-1">Length</label>
-                    <input type="text" name="length" id="length" value="{{ old('length') }}"
-                           class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('length') border-red-500 @enderror"
-                           placeholder="0 m">
-                    @error('length')
+                    <label for="brand" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                    <input type="text" name="brand" id="brand" value="{{ old('brand') }}"
+                           class="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('brand') border-red-500 @enderror"
+                           placeholder="e.g. Derba, Mugher, EAL">
+                    @error('brand')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                     @enderror
                 </div>

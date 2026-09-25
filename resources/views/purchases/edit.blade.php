@@ -66,8 +66,7 @@
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-20">Qty</th>
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Unit Cost</th>
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Type</th>
-                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Diameter</th>
-                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-24">Size</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-32">Brand</th>
                             <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase w-20">Total</th>
                             <th class="px-3 py-2 w-10"></th>
                         </tr>
@@ -76,7 +75,7 @@
                     </tbody>
                     <tfoot>
                         <tr class="bg-gray-50 border-t border-gray-200">
-                            <td colspan="7" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
+                            <td colspan="6" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
                             <td class="px-3 py-3 text-right text-sm font-bold text-gray-900" id="grand-total">ETB 0.00</td>
                             <td></td>
                         </tr>
@@ -117,6 +116,11 @@ function productOptions(selectedId) {
     return html;
 }
 
+function productBrand(id) {
+    const p = products.find(p => String(p.id) === String(id));
+    return p ? (p.brand || '') : '';
+}
+
 function addRow(data) {
     const tbody = document.getElementById('items-body');
     const row = document.createElement('tr');
@@ -145,12 +149,9 @@ function addRow(data) {
                    class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type">
         </td>
         <td class="px-3 py-2">
-            <input type="text" name="items[${idx}][diameter]" value="${data ? (data.diameter || '') : ''}"
-                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Diameter">
-        </td>
-        <td class="px-3 py-2">
-            <input type="text" name="items[${idx}][size]" value="${data ? (data.size || '') : ''}"
-                   class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Size">
+            <input type="text" name="items[${idx}][brand]" readonly tabindex="-1"
+                   value="${data ? productBrand(data.product_id) : ''}"
+                   class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none" placeholder="Brand">
         </td>
         <td class="px-3 py-2 text-right text-sm text-gray-600" id="total-${idx}">ETB 0.00</td>
         <td class="px-3 py-2">
@@ -175,6 +176,8 @@ function fillPrice(el, idx) {
     if (opt && opt.dataset.price) {
         const costInput = document.querySelector(`#row-${idx} input[name="items[${idx}][unit_cost]"]`);
         if (costInput) costInput.value = opt.dataset.price;
+        const brandInput = document.querySelector(`#row-${idx} input[name="items[${idx}][brand]"]`);
+        if (brandInput) brandInput.value = productBrand(el.value);
         calcRow(idx);
     }
 }

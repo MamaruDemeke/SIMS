@@ -49,24 +49,16 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div class="grid grid-cols-1 gap-4 mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <div>
                     <label for="catFilter" class="block text-sm font-medium text-gray-700 mb-1">Select Category</label>
-                    <select id="catFilter" onchange="filterProducts()"
+                    <select id="catFilter"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">All Categories</option>
                         @foreach($categories as $cat)
                             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                         @endforeach
                     </select>
-                </div>
-                <div>
-                    <label for="prodFilter" class="block text-sm font-medium text-gray-700 mb-1">Select Product (by type/code)</label>
-                    <select id="prodFilter" onchange="addSelectedProduct()"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select Product</option>
-                    </select>
-                    <p class="mt-1 text-xs text-gray-400">Choosing a product opens a line where you can add one or more grade variants.</p>
                 </div>
             </div>
 
@@ -82,8 +74,7 @@
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-16">Qty</th>
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Unit Price (ETB)</th>
                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-28">Grade</th>
-                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-20">Diameter</th>
-                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-16">Size</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-32">Brand</th>
                             <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase w-24">Total</th>
                             <th class="px-3 py-2 w-10"></th>
                         </tr>
@@ -92,8 +83,12 @@
                     </tbody>
                     <tfoot id="items-foot">
                         <tr class="bg-gray-50 border-t border-gray-200">
-                            <td colspan="9" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
+                            <td colspan="8" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Grand Total</td>
                             <td class="px-3 py-3 text-right text-sm font-bold text-gray-900" id="grand-total">ETB 0.00</td>
+                        </tr>
+                        <tr class="bg-gray-50 border-t border-gray-200">
+                            <td colspan="8" class="px-3 py-3 text-right text-sm font-semibold text-gray-700">Estimated Profit</td>
+                            <td class="px-3 py-3 text-right text-sm font-bold text-emerald-600" id="profit-total">ETB 0.00</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -116,7 +111,6 @@
     const rowIndex = {current: 0};
 
     const catFilter = document.getElementById('catFilter');
-    const prodFilter = document.getElementById('prodFilter');
 
     // -- Step 1: group the flat product list by product_code (base product) --
     function buildGroups(catId) {
@@ -128,28 +122,6 @@
             map.get(key).variants.push(p);
         });
         return Array.from(map.values());
-    }
-
-    function filterProducts() {
-        const catId = catFilter ? catFilter.value : '';
-        const groups = buildGroups(catId);
-        prodFilter.innerHTML = '<option value="">Select Product</option>';
-        groups.forEach((g, gi) => {
-            const opt = document.createElement('option');
-            opt.value = g.code;
-            opt.textContent = g.variants.length > 0 ? g.code + ' — ' + g.variants[0].name : g.code;
-            prodFilter.appendChild(opt);
-        });
-    }
-
-    function addSelectedProduct() {
-        const code = prodFilter.value;
-        if (!code) return;
-        // Find the group with this code (respecting the current category filter).
-        const catId = catFilter ? catFilter.value : '';
-        const group = buildGroups(catId).find(g => g.code === code);
-        if (group) addLineGroup(group);
-        prodFilter.value = '';
     }
 
     // "Add Product" button: opens an empty line group with a base-product picker.
@@ -173,7 +145,7 @@
             <td class="px-3 py-2 align-top pt-3">
                 <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
             </td>
-            <td colspan="9" class="px-3 py-2">
+            <td colspan="8" class="px-3 py-2">
                 <div class="mb-2 flex items-center gap-2">
                     <select onchange="setLineGroup(${groupIdx}, this.value)" class="px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select product (type/code)</option>
@@ -193,6 +165,7 @@
         container._pickGroups = Object.fromEntries(groups.map(g => [g.code, g]));
         tbody.appendChild(container);
         document.getElementById('items-error').classList.add('hidden');
+        renumberGroups();
     }
 
     function setLineGroup(groupIdx, code) {
@@ -213,7 +186,7 @@
             <td class="px-3 py-2 align-top pt-3">
                 <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full">${groupIdx}</span>
             </td>
-            <td colspan="9" class="px-3 py-2">
+            <td colspan="8" class="px-3 py-2">
                 <div class="mb-2 flex items-center gap-2">
                     <span class="text-sm font-semibold text-gray-800">${group.code}</span>
                     <button type="button" onclick="addGrade(${groupIdx})" class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
@@ -230,6 +203,7 @@
         tbody.appendChild(container);
         addGrade(groupIdx, group);
         document.getElementById('items-error').classList.add('hidden');
+        renumberGroups();
     }
 
     function addGrade(groupIdx, group) {
@@ -241,7 +215,7 @@
 
         const itemIdx = ++rowIndex.current;
         const options = stored.variants.map(v =>
-            `<option value="${v.id}" data-price="${v.price||0}" data-stock="${v.stock||0}" data-type="${v.type||''}" data-diameter="${v.diameter||''}" data-size="${v.size||''}">${v.name}${v.type? ' — G '+v.type : ''}</option>`
+            `<option value="${v.id}" data-price="${v.price||0}" data-cost="${v.cost||0}" data-stock="${v.stock||0}" data-type="${v.type||''}" data-brand="${v.brand||''}">${v.name}${v.type? ' — G '+v.type : ''}</option>`
         ).join('');
 
         const row = document.createElement('tr');
@@ -268,11 +242,7 @@
                        class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
             </td>
             <td class="px-2 py-2">
-                <input type="text" name="items[${itemIdx}][diameter]" readonly tabindex="-1"
-                       class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
-            </td>
-            <td class="px-2 py-2">
-                <input type="text" name="items[${itemIdx}][size]" readonly tabindex="-1"
+                <input type="text" name="items[${itemIdx}][brand]" readonly tabindex="-1"
                        class="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:outline-none">
             </td>
             <td class="px-2 py-2 text-right text-sm text-gray-600" id="total-${itemIdx}">ETB 0.00</td>
@@ -292,13 +262,11 @@
         const row = document.getElementById('grade-' + idx);
         const price = row.querySelector(`input[name="items[${idx}][unit_price]"]`);
         const type = row.querySelector(`input[name="items[${idx}][type]"]`);
-        const diam = row.querySelector(`input[name="items[${idx}][diameter]"]`);
-        const size = row.querySelector(`input[name="items[${idx}][size]"]`);
+        const brand = row.querySelector(`input[name="items[${idx}][brand]"]`);
         const stock = row.querySelector(`#stock-${idx}`);
         if (price) price.value = opt.dataset.price || 0;
         if (type) type.value = opt.dataset.type || '';
-        if (diam) diam.value = opt.dataset.diameter || '';
-        if (size) size.value = opt.dataset.size || '';
+        if (brand) brand.value = opt.dataset.brand || '';
         if (stock) stock.textContent = opt.dataset.stock ?? '—';
         calcRow(idx);
     }
@@ -310,7 +278,7 @@
 
     function removeLineGroup(gid) {
         const cont = document.getElementById('grp-' + gid);
-        if (cont) { cont.remove(); calcGrandTotal(); }
+        if (cont) { cont.remove(); renumberGroups(); calcGrandTotal(); }
     }
 
     function calcRow(idx) {
@@ -324,11 +292,21 @@
 
     function calcGrandTotal() {
         let grand = 0;
-        document.querySelectorAll('[id^="total-"]').forEach(el => {
-            const val = parseFloat(el.textContent.replace(/[^0-9.-]/g, '') || 0);
-            if (!isNaN(val)) grand += val;
+        let profit = 0;
+        document.querySelectorAll('tr[id^="grade-"]').forEach(row => {
+            const sel = row.querySelector('select[name$="[product_id]"]');
+            const qty = parseFloat(row.querySelector('input[name$="[quantity]"]')?.value) || 0;
+            const price = parseFloat(row.querySelector('input[name$="[unit_price]"]')?.value) || 0;
+            const cost = parseFloat(sel?.options[sel.selectedIndex]?.dataset.cost) || 0;
+            grand += qty * price;
+            profit += qty * (price - cost);
         });
         document.getElementById('grand-total').textContent = 'ETB ' + grand.toLocaleString('en', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const profitEl = document.getElementById('profit-total');
+        if (profitEl) {
+            profitEl.textContent = 'ETB ' + profit.toLocaleString('en', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            profitEl.className = 'px-3 py-3 text-right text-sm font-bold ' + (profit >= 0 ? 'text-emerald-600' : 'text-red-600');
+        }
     }
 
     document.getElementById('sale-form').addEventListener('submit', function(e) {
@@ -368,6 +346,11 @@
         }
     });
 
-    filterProducts();
+    function renumberGroups() {
+        document.querySelectorAll('#items-body > tr[id^="grp-"]').forEach((tr, i) => {
+            const badge = tr.querySelector('td:first-child span');
+            if (badge) badge.textContent = i + 1;
+        });
+    }
 </script>
 @endsection

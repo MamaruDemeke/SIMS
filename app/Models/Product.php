@@ -15,9 +15,8 @@ class Product extends Model
         'category_id',     // which category this product belongs to (foreign key)
         'product_code',    // short unique code, e.g. "RB-12"
         'name',            // display name
+        'brand',           // optional: brand / manufacturer name
         'unit',            // unit of measure, e.g. "pcs", "ton", "m"
-        'diameter',        // optional: for rebar, the diameter in mm
-        'length',          // optional: length in meters
         'grade',           // optional: steel grade, e.g. 60
         'purchase_price',  // how much we pay the supplier
         'selling_price',   // how much we charge customers

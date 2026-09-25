@@ -140,8 +140,7 @@ class PurchaseController extends Controller
             'category_id' => $p->category_id,
             'unit' => $p->unit,
             'type' => $p->grade,
-            'diameter' => $p->diameter,
-            'size' => $p->length,
+            'brand' => $p->brand,
         ])->values();
 
         // Pending stock notifications (optional — can still use them).
@@ -181,8 +180,7 @@ class PurchaseController extends Controller
                         'category_id' => $product->category_id,
                         'unit' => $product->unit,
                         'type' => $product->grade,
-                        'diameter' => $product->diameter,
-                        'size' => $product->length,
+                        'brand' => $product->brand,
                     ],
                 ];
             }
@@ -205,8 +203,7 @@ class PurchaseController extends Controller
                         'category_id' => $product->category_id,
                         'unit' => $product->unit,
                         'type' => $product->grade,
-                        'diameter' => $product->diameter,
-                        'size' => $product->length,
+                        'brand' => $product->brand,
                     ],
                 ];
                 $preselectedItems = [$preselected];
@@ -310,8 +307,6 @@ class PurchaseController extends Controller
                     'quantity' => $item['quantity'],
                     'unit_cost' => $item['unit_cost'],
                     'type' => $item['type'] ?? null,
-                    'diameter' => $item['diameter'] ?? null,
-                    'size' => $item['size'] ?? null,
                 ]);
             }
 
@@ -362,8 +357,8 @@ class PurchaseController extends Controller
         $suppliers = Supplier::where('status', true)->orderBy('name')->get();
         $products = Product::where('status', true)->orderBy('name')->get();
         $purchase->load('items.product');
-        $productsJson = $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->product_code, 'price' => $p->purchase_price])->values();
-        $existingItemsJson = $purchase->items->map(fn($item) => ['product_id' => $item->product_id, 'quantity' => $item->quantity, 'unit_cost' => $item->unit_cost, 'type' => $item->type, 'diameter' => $item->diameter, 'size' => $item->size])->values();
+        $productsJson = $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name, 'code' => $p->product_code, 'brand' => $p->brand, 'price' => $p->purchase_price])->values();
+        $existingItemsJson = $purchase->items->map(fn($item) => ['product_id' => $item->product_id, 'quantity' => $item->quantity, 'unit_cost' => $item->unit_cost, 'type' => $item->type])->values();
 
         return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'productsJson', 'existingItemsJson'));
     }
@@ -417,8 +412,6 @@ class PurchaseController extends Controller
                     'quantity' => $item['quantity'],
                     'unit_cost' => $item['unit_cost'],
                     'type' => $item['type'] ?? null,
-                    'diameter' => $item['diameter'] ?? null,
-                    'size' => $item['size'] ?? null,
                 ]);
             }
 

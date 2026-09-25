@@ -17,8 +17,6 @@ class SaleItem extends Model
         'quantity',   // how many units
         'unit_price', // price per single unit
         'type',       // optional product type
-        'diameter',   // optional rebar diameter
-        'size',       // optional size
     ];
 
     // Defines how columns are typed when read from the DB.

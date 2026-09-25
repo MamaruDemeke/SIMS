@@ -68,11 +68,11 @@ class SaleController extends Controller
             'name' => $p->name,
             'code' => $p->product_code,
             'price' => $p->selling_price,
+            'cost' => $p->purchase_price,
             'category_id' => $p->category_id,
             'unit' => $p->unit,
             'type' => $p->grade,
-            'diameter' => $p->diameter,
-            'size' => $p->length,
+            'brand' => $p->brand,
             'stock' => $p->inventory?->quantity ?? 0,
         ])->values();
 
@@ -139,8 +139,6 @@ class SaleController extends Controller
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'type' => $item['type'] ?? null,
-                    'diameter' => $item['diameter'] ?? null,
-                    'size' => $item['size'] ?? null,
                 ]);
             }
 

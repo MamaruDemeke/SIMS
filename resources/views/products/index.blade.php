@@ -103,6 +103,7 @@
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Code</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                    <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Brand</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Grade</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
                     <th scope="col" class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Unit</th>
@@ -118,6 +119,7 @@
                         <td class="px-4 py-3.5 whitespace-nowrap">{{ $products->firstItem() + $loop->index }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap font-mono text-xs text-gray-600">{{ $product->product_code }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap font-medium text-gray-800">{{ $product->name }}</td>
+                        <td class="px-4 py-3.5 whitespace-nowrap text-gray-600">{{ $product->brand ?? '—' }}</td>
                         <td class="px-4 py-3.5 whitespace-nowrap">
                             @if($product->grade)
                                 <x-status-badge :label="$product->grade" variant="info" />
@@ -151,7 +153,7 @@
                         </td>
                     </tr>
                 @empty
-                    <x-table-empty :colspan="10" message="No products found." description="Create your first product to get started." icon="search">
+                    <x-table-empty :colspan="11" message="No products found." description="Create your first product to get started." icon="search">
                         <a href="{{ route('products.create') }}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

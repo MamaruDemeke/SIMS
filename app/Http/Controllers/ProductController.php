@@ -70,8 +70,7 @@ class ProductController extends Controller
             'product_code' => ['required', 'string', 'max:50', Rule::unique('products', 'product_code')->where('grade', $request->grade)],
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:20',
-            'diameter' => 'nullable|string|max:50',   // optional
-            'length' => 'nullable|string|max:50',     // optional
+            'brand' => 'nullable|string|max:50',   // optional
             'grade' => 'required|string|max:50',      // required — stock is classified by grade
             'purchase_price' => 'required|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',
@@ -112,8 +111,7 @@ class ProductController extends Controller
             'product_code' => ['required', 'string', 'max:50', Rule::unique('products', 'product_code')->where('grade', $request->grade)->ignore($product->id)],
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:20',
-            'diameter' => 'nullable|string|max:50',
-            'length' => 'nullable|string|max:50',
+            'brand' => 'nullable|string|max:50',
             'grade' => 'required|string|max:50',
             'purchase_price' => 'required|numeric|min:0',
             'selling_price' => 'nullable|numeric|min:0',

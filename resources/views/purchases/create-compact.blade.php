@@ -45,8 +45,6 @@
                     </p>
                     <input type="hidden" name="items[0][product_id]" value="{{ $product ? $product->id : '' }}">
                     <input type="hidden" name="items[0][type]" value="{{ $product ? $product->grade : '' }}">
-                    <input type="hidden" name="items[0][diameter]" value="{{ $product ? $product->diameter : '' }}">
-                    <input type="hidden" name="items[0][size]" value="{{ $product ? $product->length : '' }}">
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
